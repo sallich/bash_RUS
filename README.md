@@ -2,6 +2,9 @@
 
 Реализация bash на Java/Kotlin.
 
+## Архитектура
+<img width="826" height="412" alt="Bash architecture" src="https://github.com/user-attachments/assets/89387a7a-c8d8-4c6c-a4b2-e8c0f99c7640" />
+
 ## Сборка
 
 - **Локально:** установите [JDK 17+](https://adoptium.net/) и [Gradle](https://gradle.org/), затем:
@@ -17,5 +20,9 @@
 - `src/main/kotlin/ru/bash/` — исходный код
 - `src/test/kotlin/ru/bash/` — тесты
 
-## Архитектура
-<img width="826" height="412" alt="Bash architecture" src="https://github.com/user-attachments/assets/89387a7a-c8d8-4c6c-a4b2-e8c0f99c7640" />
+## Интеграция с AI
+
+### Архитектура
+
+
+### Настройка CI
