@@ -11,7 +11,7 @@ import ru.bash.syntax.errors.ParseException
 import ru.bash.syntax.token.Token
 import ru.bash.syntax.token.TokenType
 
-class Parser(private val tokens: List<Token>) {
+class Parser(tokens: List<Token>) {
     private val stream = TokenStream(tokens)
 
     fun parse() : PipelineNode {

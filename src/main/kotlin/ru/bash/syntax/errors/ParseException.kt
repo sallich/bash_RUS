@@ -2,5 +2,5 @@ package ru.bash.syntax.errors
 
 class ParseException (
     message : String,
-    val pos : Int
-) : RuntimeException(message)
+    pos : Int
+) : RuntimeException("Error at position $pos: $message")

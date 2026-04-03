@@ -4,7 +4,7 @@ import ru.bash.syntax.token.Token
 import ru.bash.syntax.token.TokenType
 
 class Lexer (
-    private val input : String
+    input : String
 ) {
     private val stream = CharStream(input)
     private val tokens = mutableListOf<Token>()
