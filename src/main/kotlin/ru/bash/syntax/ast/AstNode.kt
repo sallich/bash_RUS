@@ -1,3 +1,3 @@
 package ru.bash.syntax.ast
 
-sealed interface AstNode {}
+sealed interface AstNode

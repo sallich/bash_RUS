@@ -25,13 +25,13 @@ class Lexer (
     private fun tokenizeQuoted(endChar: Char, type: TokenType) {
         val start = stream.position()
         val sb = StringBuilder()
-        while (true) {
-            val c = stream.next() ?: break
-            if (c == endChar) {
-                state = LexerState.NORMAL
-                break
-            }
+        var c = stream.next()
+        while (c != null && c != endChar) {
             sb.append(c)
+            c = stream.next()
+        }
+        if (c == endChar) {
+            state = LexerState.NORMAL
         }
         addToken(type, sb.toString(), start)
     }
@@ -60,10 +60,10 @@ class Lexer (
         val start = stream.position()
         stream.next()
         val name = StringBuilder()
-        while (true) {
-            val c = stream.peek() ?: break
-            if (!c.isLetterOrDigit() && c != '_') break
+        var c = stream.peek()
+        while (c != null && (c.isLetterOrDigit() || c == '_')) {
             name.append(stream.next())
+            c = stream.peek()
         }
         addToken(TokenType.VAR, name.toString(), start)
     }
@@ -71,10 +71,10 @@ class Lexer (
     private fun tokenizeWord() {
         val start = stream.position()
         val s = StringBuilder()
-        while (true) {
-            val c = stream.peek() ?: break
-            if(c.isWhitespace() || isSpecial(c)) break
+        var c = stream.peek()
+        while (c != null && !c.isWhitespace() && !isSpecial(c)) {
             s.append(stream.next())
+            c = stream.peek()
         }
         addToken(TokenType.WORD, s.toString(), start)
     }
