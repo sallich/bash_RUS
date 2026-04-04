@@ -1,9 +1,10 @@
 package ru.bash.semantic.model
 
-/*data class ExecModel(val commands: List<ExecCommand>)
+data class ExecPipeline(val commands: List<ExecCommand>)
 
 data class ExecCommand(
-    val name : String,
-    val args : List<String>
+    val argv: List<String>
 )
-*/
+{
+    val name: String get() = argv.firstOrNull().orEmpty()
+}
