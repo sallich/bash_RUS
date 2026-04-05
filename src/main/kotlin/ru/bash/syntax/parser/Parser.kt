@@ -3,6 +3,7 @@ package ru.bash.syntax.parser
 import ru.bash.syntax.ast.ArgumentNode
 import ru.bash.syntax.ast.CommandNode
 import ru.bash.syntax.ast.PipelineNode
+import ru.bash.syntax.ast.ShellWordNode
 import ru.bash.syntax.ast.SingleQuotedNode
 import ru.bash.syntax.ast.StringNode
 import ru.bash.syntax.ast.VariableNode
@@ -13,6 +14,15 @@ import ru.bash.syntax.token.TokenType
 
 class Parser(tokens: List<Token>) {
     private val stream = TokenStream(tokens)
+
+    private companion object {
+        private val ARG_TOKEN_TYPES = setOf(
+            TokenType.WORD,
+            TokenType.VAR,
+            TokenType.SINGLE_QUOTED,
+            TokenType.STRING
+        )
+    }
 
     fun parse() : PipelineNode {
         val pipeline = parsePipeline()
@@ -40,32 +50,41 @@ class Parser(tokens: List<Token>) {
         )
         val args = mutableListOf<ArgumentNode>()
         while (true) {
-            val arg = parseArgument() ?: break
+            val arg = parseShellWord() ?: break
             args += arg
         }
         return CommandNode(nameToken.text, args)
     }
 
-    private fun parseArgument() : ArgumentNode? {
-        val token = stream.peek()
-        return when(token.type) {
-            TokenType.WORD -> {
-                stream.next()
-                WordNode(token.text)
-            }
-            TokenType.VAR -> {
-                stream.next()
-                VariableNode(token.text)
-            }
-            TokenType.SINGLE_QUOTED -> {
-                stream.next()
-                SingleQuotedNode(token.text)
-            }
-            TokenType.STRING -> {
-                stream.next()
-                StringNode(token.text)
-            }
-            else -> null
+    private fun parseShellWord(): ArgumentNode? {
+        val parts = mutableListOf<ArgumentNode>()
+        var end = 0
+        while (!stream.end()) {
+            val t = stream.peek()
+            if (t.type !in ARG_TOKEN_TYPES || (parts.isNotEmpty() && t.pos != end)) break
+            stream.next()
+            parts += argumentNodeFor(t)
+            end = tokenEndExclusive(t)
         }
+        return when {
+            parts.isEmpty() -> null
+            parts.size == 1 -> parts.single()
+            else -> ShellWordNode(parts)
+        }
+    }
+
+    private fun tokenEndExclusive(t: Token): Int = when (t.type) {
+        TokenType.VAR -> t.pos + 1 + t.text.length
+        TokenType.SINGLE_QUOTED,
+        TokenType.STRING -> t.pos + t.text.length + 1
+        else -> t.pos + t.text.length
+    }
+
+    private fun argumentNodeFor(token: Token): ArgumentNode = when (token.type) {
+        TokenType.WORD -> WordNode(token.text)
+        TokenType.VAR -> VariableNode(token.text)
+        TokenType.SINGLE_QUOTED -> SingleQuotedNode(token.text)
+        TokenType.STRING -> StringNode(token.text)
+        else -> error("Unreachable: ${token.type} not in ARG_TOKEN_TYPES")
     }
 }
