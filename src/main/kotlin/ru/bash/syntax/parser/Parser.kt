@@ -12,7 +12,10 @@ import ru.bash.syntax.errors.ParseException
 import ru.bash.syntax.token.Token
 import ru.bash.syntax.token.TokenType
 
-class Parser(tokens: List<Token>) {
+class Parser(
+    tokens: List<Token>,
+    private val source: String,
+) {
     private val stream = TokenStream(tokens)
 
     private companion object {
@@ -20,24 +23,24 @@ class Parser(tokens: List<Token>) {
             TokenType.WORD,
             TokenType.VAR,
             TokenType.SINGLE_QUOTED,
-            TokenType.STRING
+            TokenType.DOUBLE_QUOTED_LITERAL,
         )
     }
 
-    fun parse() : PipelineNode {
+    fun parse(): PipelineNode {
         val pipeline = parsePipeline()
-        if(!stream.end()) {
+        if (!stream.end()) {
             val token = stream.peek()
             throw ParseException("Unexpected token after pipeline", token.pos)
         }
         return pipeline
     }
 
-    private fun parsePipeline() : PipelineNode {
+    private fun parsePipeline(): PipelineNode {
         val commands = mutableListOf<CommandNode>()
         commands += parseCommand()
         while (stream.match(TokenType.PIPELINE)) {
-            if(stream.end()) throw ParseException("Expected command after '|'", stream.peek().pos)
+            if (stream.end()) throw ParseException("Expected command after '|'", stream.peek().pos)
             commands += parseCommand()
         }
         return PipelineNode(commands)
@@ -58,33 +61,46 @@ class Parser(tokens: List<Token>) {
 
     private fun parseShellWord(): ArgumentNode? {
         val parts = mutableListOf<ArgumentNode>()
+        val types = mutableListOf<TokenType>()
         var end = 0
-        while (!stream.end()) {
-            val t = stream.peek()
-            if (t.type !in ARG_TOKEN_TYPES || (parts.isNotEmpty() && t.pos != end)) break
-            stream.next()
+        while (!stream.end() && shouldExtendShellWord(stream.peek(), end, types)) {
+            val t = stream.next()
+            types += t.type
             parts += argumentNodeFor(t)
-            end = tokenEndExclusive(t)
+            end = t.endExclusive
         }
+        return normalizeShellWord(parts, types)
+    }
+
+    private fun shouldExtendShellWord(t: Token, end: Int, types: List<TokenType>): Boolean =
+        when {
+            t.type !in ARG_TOKEN_TYPES -> false
+            types.isEmpty() || t.pos == end -> true
+            else ->
+                t.pos > end &&
+                    t.type == TokenType.DOUBLE_QUOTED_LITERAL &&
+                    types.last() == TokenType.DOUBLE_QUOTED_LITERAL &&
+                    (end until t.pos).all { source[it] == '"' }
+        }
+
+    private fun normalizeShellWord(
+        parts: List<ArgumentNode>,
+        types: List<TokenType>,
+    ): ArgumentNode? {
         return when {
             parts.isEmpty() -> null
+            parts.size == 1 && types.single() == TokenType.DOUBLE_QUOTED_LITERAL ->
+                parts.single()
             parts.size == 1 -> parts.single()
             else -> ShellWordNode(parts)
         }
-    }
-
-    private fun tokenEndExclusive(t: Token): Int = when (t.type) {
-        TokenType.VAR -> t.pos + 1 + t.text.length
-        TokenType.SINGLE_QUOTED,
-        TokenType.STRING -> t.pos + t.text.length + 1
-        else -> t.pos + t.text.length
     }
 
     private fun argumentNodeFor(token: Token): ArgumentNode = when (token.type) {
         TokenType.WORD -> WordNode(token.text)
         TokenType.VAR -> VariableNode(token.text)
         TokenType.SINGLE_QUOTED -> SingleQuotedNode(token.text)
-        TokenType.STRING -> StringNode(token.text)
+        TokenType.DOUBLE_QUOTED_LITERAL -> StringNode(token.text)
         else -> error("Unreachable: ${token.type} not in ARG_TOKEN_TYPES")
     }
 }

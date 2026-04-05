@@ -10,7 +10,7 @@ import ru.bash.syntax.parser.Parser
 class AstTraversalTest {
 
     private fun parse(input: String): PipelineNode =
-        Parser(Lexer(input).tokenize()).parse()
+        Parser(Lexer(input).tokenize(), input).parse()
 
     private fun walk(ast: PipelineNode): List<String> {
         val visitor = RecordingAstVisitor()

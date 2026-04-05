@@ -5,7 +5,7 @@ enum class TokenType {
     PIPELINE,
     VAR,
     SINGLE_QUOTED,
-    STRING,
+    DOUBLE_QUOTED_LITERAL,
     REDIRECT_IN,
     REDIRECT_OUT,
     EOF
