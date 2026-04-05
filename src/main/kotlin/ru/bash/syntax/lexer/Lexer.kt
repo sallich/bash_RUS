@@ -1,5 +1,6 @@
 package ru.bash.syntax.lexer
 
+import ru.bash.syntax.errors.ParseException
 import ru.bash.syntax.token.Token
 import ru.bash.syntax.token.TokenType
 
@@ -30,9 +31,10 @@ class Lexer (
             sb.append(c)
             c = stream.next()
         }
-        if (c == endChar) {
-            state = LexerState.NORMAL
+        if (c != endChar) {
+            throw ParseException("Unterminated quote starting", start)
         }
+        state = LexerState.NORMAL
         addToken(type, sb.toString(), start)
     }
 
