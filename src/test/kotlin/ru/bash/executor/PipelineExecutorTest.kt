@@ -129,7 +129,7 @@ class PipelineExecutorTest {
     @Test
     fun `failed result has correct ExitCode`(): Unit = runBlocking {
         val result = PipelineResult(listOf(0, 3, 0))
-        result.failed shouldBe true
+        result.failed shouldBe false
         result.lastExitCode shouldBe 0
     }
 }

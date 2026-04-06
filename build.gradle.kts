@@ -30,6 +30,10 @@ application {
     mainClass.set("ru.bash.MainKt")
 }
 
+tasks.withType<JavaExec> {
+    standardInput = System.`in`
+}
+
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
