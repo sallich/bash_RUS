@@ -4,7 +4,10 @@ data class ExecPipeline(val commands: List<ExecCommand>)
 
 data class ExecCommand(
     val argv: List<String>
-)
-{
-    val name: String get() = argv.firstOrNull().orEmpty()
+) {
+    init {
+        require(argv.isNotEmpty()) { "argv must not be empty" }
+    }
+
+    val name: String get() = argv.first()
 }
