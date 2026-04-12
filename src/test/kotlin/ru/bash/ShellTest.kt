@@ -99,4 +99,12 @@ class ShellTest {
         Shell(executor, emptyMap(), input, out, err).run()
         out.toString() shouldBe "$ "
     }
+
+    @Test
+    fun `assignment returns exit code 0`(): Unit = runBlocking {
+        val result = shell().executeLine("FOO=bar")
+        result.failed shouldBe false
+        result.exitCodes shouldBe listOf(0)
+    }
+
 }

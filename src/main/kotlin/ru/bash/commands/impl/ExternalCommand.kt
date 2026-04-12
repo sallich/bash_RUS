@@ -8,25 +8,34 @@ class ExternalCommand(
     override val name: String
 ) : Command {
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream): Int {
-        val process = ProcessBuilder(argv)
-            .redirectErrorStream(true)
-            .start()
+    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
+        val inheritStdin = stdin === System.`in`
 
-        val pipeIn = Thread {
-            stdin.copyTo(process.outputStream)
-            process.outputStream.close()
+        val builder = ProcessBuilder(argv)
+        if (inheritStdin) {
+            builder.redirectInput(ProcessBuilder.Redirect.INHERIT)
         }
-        val pipeOut = Thread {
-            process.inputStream.copyTo(stdout)
-        }
+        val process = builder.start()
 
-        pipeIn.start()
+        val pipeIn = if (!inheritStdin) Thread {
+            try {
+                stdin.copyTo(process.outputStream)
+            } finally {
+                process.outputStream.close()
+            }
+        } else null
+
+        val pipeOut = Thread { process.inputStream.copyTo(stdout) }
+        val pipeErr = Thread { process.errorStream.copyTo(stderr) }
+
+        pipeIn?.start()
         pipeOut.start()
+        pipeErr.start()
 
         val exitCode = process.waitFor()
-        pipeIn.join()
+        pipeIn?.join()
         pipeOut.join()
+        pipeErr.join()
 
         return exitCode
     }

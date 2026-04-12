@@ -10,7 +10,7 @@ import ru.bash.syntax.parser.Parser
 class AstTraversalTest {
 
     private fun parse(input: String): PipelineNode =
-        Parser(Lexer(input).tokenize(), input).parse()
+        Parser(Lexer(input).tokenize(), input).parse() as PipelineNode
 
     private fun walk(ast: PipelineNode): List<String> {
         val visitor = RecordingAstVisitor()
@@ -175,5 +175,10 @@ private class RecordingAstVisitor : AstVisitor<Unit> {
 
     override fun visitVariable(node: VariableNode) {
         events += "Var:${node.value}"
+    }
+
+    override fun visitAssign(node: AssignNode) {
+        events += "Assign:${node.name}"
+        node.value.accept(this)
     }
 }

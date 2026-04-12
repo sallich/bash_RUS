@@ -1,6 +1,8 @@
 package ru.bash.syntax.parser
 
 import ru.bash.syntax.ast.ArgumentNode
+import ru.bash.syntax.ast.AssignNode
+import ru.bash.syntax.ast.AstNode
 import ru.bash.syntax.ast.CommandNode
 import ru.bash.syntax.ast.PipelineNode
 import ru.bash.syntax.ast.ShellWordNode
@@ -25,15 +27,72 @@ class Parser(
             TokenType.SINGLE_QUOTED,
             TokenType.DOUBLE_QUOTED_LITERAL,
         )
+        private val QUOTED_TYPES = setOf(
+            TokenType.SINGLE_QUOTED,
+            TokenType.DOUBLE_QUOTED_LITERAL,
+        )
+        private val ASSIGN_NAME_RE = Regex("[a-zA-Z_][a-zA-Z0-9_]*")
     }
 
-    fun parse(): PipelineNode {
+    fun parse(): AstNode {
+        val assign = tryParseAssign()
+        if (assign != null) {
+            if (!stream.end()) throw ParseException("Unexpected token after assignment", stream.peek().pos)
+            return assign
+        }
         val pipeline = parsePipeline()
         if (!stream.end()) {
             val token = stream.peek()
             throw ParseException("Unexpected token after pipeline", token.pos)
         }
         return pipeline
+    }
+
+    private fun tryParseAssign(): AssignNode? {
+        val token = stream.peek()
+        val eqIdx = token.text.indexOf('=')
+        val nameText = token.text.substringBefore('=')
+            .takeIf { token.type == TokenType.WORD && eqIdx >= 1 && it.matches(ASSIGN_NAME_RE) }
+            ?: return null
+
+        val literalSuffix = token.text.substringAfter('=')
+        stream.next()
+        val parts = mutableListOf<ArgumentNode>()
+        val types = mutableListOf<TokenType>()
+        var end = token.endExclusive
+
+        if (literalSuffix.isNotEmpty()) {
+            parts += WordNode(literalSuffix)
+            types += TokenType.WORD
+        }
+
+        while (!stream.end() && isAdjacentToAssignValue(stream.peek(), end, types)) {
+            val t = stream.next()
+            types += t.type
+            parts += argumentNodeFor(t)
+            end = t.endExclusive
+        }
+
+        val value: ArgumentNode = when {
+            parts.isEmpty() -> WordNode("")
+            parts.size == 1 -> parts.single()
+            else -> ShellWordNode(parts)
+        }
+        return AssignNode(nameText, value)
+    }
+
+    private fun isAdjacentToAssignValue(t: Token, end: Int, types: List<TokenType>): Boolean =
+        when {
+            t.type !in ARG_TOKEN_TYPES -> false
+            t.pos == end -> true
+            t.type in QUOTED_TYPES && t.pos == end + 1 -> true
+            else -> isConsecutiveDoubleQuoted(t, end, types)
+        }
+
+    private fun isConsecutiveDoubleQuoted(t: Token, end: Int, types: List<TokenType>): Boolean {
+        if (t.type != TokenType.DOUBLE_QUOTED_LITERAL || types.isEmpty()) return false
+        return types.last() == TokenType.DOUBLE_QUOTED_LITERAL &&
+            t.pos > end && (end until t.pos).all { source[it] == '"' }
     }
 
     private fun parsePipeline(): PipelineNode {

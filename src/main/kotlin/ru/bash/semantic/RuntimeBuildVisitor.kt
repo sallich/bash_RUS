@@ -2,6 +2,7 @@ package ru.bash.semantic
 
 import ru.bash.semantic.model.ExecCommand
 import ru.bash.semantic.model.ExecPipeline
+import ru.bash.syntax.ast.AssignNode
 import ru.bash.syntax.ast.AstVisitor
 import ru.bash.syntax.ast.CommandNode
 import ru.bash.syntax.ast.PipelineNode
@@ -35,6 +36,9 @@ class RuntimeBuildVisitor(
         }
         commands += ExecCommand(argv)
     }
+
+    override fun visitAssign(node: AssignNode): Unit =
+        throw UnsupportedOperationException("AssignNode must be handled before build()")
 
     override fun visitShellWord(node: ShellWordNode): Unit =
         throw UnsupportedOperationException("Expected pipeline or command")

@@ -8,7 +8,7 @@ interface Command {
     val minArgs: Int get() = 0
     val maxArgs: Int get() = Int.MAX_VALUE
 
-    fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream): Int
+    fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int
 
     fun validateArgs(argv: List<String>) {
         val argCount = argv.size - 1
