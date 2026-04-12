@@ -99,4 +99,12 @@ class ShellTest {
         Shell(executor, emptyMap(), input, out, err).run()
         out.toString() shouldBe "$ "
     }
+
+    @Test
+    fun `run pipeline with echo and grep`() {
+        val input = ByteArrayInputStream("echo aaa | grep a".toByteArray())
+        val out = ByteArrayOutputStream()
+        Shell(executor, emptyMap(), input, out, err).run()
+        out.toString() shouldContain "aaa\n"
+    }
 }
