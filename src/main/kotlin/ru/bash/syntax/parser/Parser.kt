@@ -106,16 +106,16 @@ class Parser(
     }
 
     private fun parseCommand(): CommandNode {
-        val nameToken = stream.expect(
-            TokenType.WORD,
-            "Expected command name"
-        )
+        val nameNode = parseShellWord()
+            ?: throw ParseException("Expected command name", stream.peek().pos)
+
         val args = mutableListOf<ArgumentNode>()
         while (true) {
             val arg = parseShellWord() ?: break
             args += arg
         }
-        return CommandNode(nameToken.text, args)
+
+        return CommandNode(nameNode, args)
     }
 
     private fun parseShellWord(): ArgumentNode? {

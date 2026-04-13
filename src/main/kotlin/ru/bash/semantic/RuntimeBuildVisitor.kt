@@ -30,10 +30,19 @@ class RuntimeBuildVisitor(
     }
 
     override fun visitCommand(node: CommandNode) {
-        val argv = buildList {
-            add(node.name)
-            addAll(node.nodes.map { it.accept(argVisitor) })
+        val argv = mutableListOf<String>()
+
+        val expandedName = node.name.accept(argVisitor)
+        if (expandedName.isNotEmpty()) {
+            argv += expandedName
         }
+
+        node.nodes
+            .map { it.accept(argVisitor) }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .forEach { argv += it }
+
         commands += ExecCommand(argv)
     }
 
