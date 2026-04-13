@@ -108,7 +108,7 @@ class ShellTest {
         out.toString() shouldContain "aaa\n"
     }
     
-  ``@Test
+    @Test
     fun `assignment returns exit code 0`(): Unit = runBlocking {
         val result = shell().executeLine("FOO=bar")
         result.failed shouldBe false
