@@ -8,25 +8,45 @@ class ExternalCommand(
     override val name: String
 ) : Command {
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream): Int {
-        val process = ProcessBuilder(argv)
-            .redirectErrorStream(true)
-            .start()
-
-        val pipeIn = Thread {
-            stdin.copyTo(process.outputStream)
-            process.outputStream.close()
+    private fun fixDottedCommand(argv: List<String>): List<String> {
+        val result = when {
+            argv.isEmpty() -> argv
+            argv[0] == "./" && argv.size > 1 ->
+                listOf("./" + argv[1]) + argv.drop(2)
+            else -> argv
         }
-        val pipeOut = Thread {
-            process.inputStream.copyTo(stdout)
-        }
+        return result
+    }
 
-        pipeIn.start()
+    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
+        val fixedArgv = fixDottedCommand(argv)
+        val inheritStdin = stdin === System.`in`
+
+        val builder = ProcessBuilder(fixedArgv)
+        if (inheritStdin) {
+            builder.redirectInput(ProcessBuilder.Redirect.INHERIT)
+        }
+        val process = builder.start()
+
+        val pipeIn = if (!inheritStdin) Thread {
+            try {
+                stdin.copyTo(process.outputStream)
+            } finally {
+                process.outputStream.close()
+            }
+        } else null
+
+        val pipeOut = Thread { process.inputStream.copyTo(stdout) }
+        val pipeErr = Thread { process.errorStream.copyTo(stderr) }
+
+        pipeIn?.start()
         pipeOut.start()
+        pipeErr.start()
 
         val exitCode = process.waitFor()
-        pipeIn.join()
+        pipeIn?.join()
         pipeOut.join()
+        pipeErr.join()
 
         return exitCode
     }

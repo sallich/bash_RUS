@@ -8,7 +8,7 @@ class ExitCommand : Command {
     override val name = "exit"
     override val maxArgs: Int = 1
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream): Int {
+    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
         validateArgs(argv)
         val code = if (argv.size > 1) {
             argv[1].toIntOrNull()
