@@ -17,18 +17,8 @@ class GrepCommand : Command {
             exitCode = 2    
             return exitCode
         }
-        val searchingStrategy = when {
-            options.addContext > 0 -> WithContextSearchingStrategy(options.addContext)
-            options.countLines && files.isEmpty() -> DefaultFromStdInSearchStrategy()
-            files.isEmpty() -> InteractiveFromStdInSearchingStrategy(stdout)
-            else -> DefaultSearchingStrategy()
-        }
-        val outputStrategy = when {
-            options.countLines -> CountLinesOutputStrategy(files.size > 1)
-            options.filesMatches -> FilesWithMatchesOutputStrategy()
-            files.isEmpty() -> EmptyOutputStrategy()
-            else -> DefaultOutputStrategy(files.size > 1)
-        }
+        val searchingStrategy = choosingSearchingStrategy(options, files.size, stdout)
+        val outputStrategy = choosingOutputStrategy(options, files.size)
 
         val regex = createRegex(pattern ?: "", options)
         if (files.isEmpty()) {
@@ -228,6 +218,24 @@ class GrepCommand : Command {
                 return 1
             }
             return 0
+        }
+    }
+
+    private fun choosingSearchingStrategy(options: Options, filesCount: Int, stdout: OutputStream): SearchingStrategy {
+        return when {
+            options.addContext > 0 -> WithContextSearchingStrategy(options.addContext)
+            options.countLines && filesCount == 0 -> DefaultFromStdInSearchStrategy()
+            filesCount == 0 -> InteractiveFromStdInSearchingStrategy(stdout)
+            else -> DefaultSearchingStrategy()
+        }
+    }
+
+    private fun choosingOutputStrategy(options: Options, filesCount: Int): OutputStrategy {
+        return when {
+            options.countLines -> CountLinesOutputStrategy(filesCount > 1)
+            options.filesMatches -> FilesWithMatchesOutputStrategy()
+            filesCount == 0 -> EmptyOutputStrategy()
+            else -> DefaultOutputStrategy(filesCount > 1)
         }
     }
 }

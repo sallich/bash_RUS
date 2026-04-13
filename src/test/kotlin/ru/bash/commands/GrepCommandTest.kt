@@ -178,7 +178,7 @@ class GrepCommandTest {
     }
 
     @Test
-    fun `grep search from not exist file`(@TempDir dir: Path) {
+    fun `grep search from not exist file`() {
         val out = ByteArrayOutputStream()
         val err = ByteArrayOutputStream()
         val code = grep.execute(
@@ -193,7 +193,7 @@ class GrepCommandTest {
     }
 
     @Test
-    fun `grep search without pattern from not exist file`(@TempDir dir: Path) {
+    fun `grep search without pattern from not exist file`() {
         val out = ByteArrayOutputStream()
         val err = ByteArrayOutputStream()
         val code = grep.execute(
