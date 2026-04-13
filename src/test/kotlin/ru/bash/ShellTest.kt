@@ -102,6 +102,14 @@ class ShellTest {
     }
 
     @Test
+    fun `run pipeline with echo and grep`() {
+        val input = ByteArrayInputStream("echo aaa | grep a".toByteArray())
+        val out = ByteArrayOutputStream()
+        Shell(executor, emptyMap(), input, out, err).run()
+        out.toString() shouldContain "aaa\n"
+    }
+    
+    @Test
     fun `assignment returns exit code 0`(): Unit = runBlocking {
         val result = shell().executeLine("FOO=bar")
         result.failed shouldBe false
