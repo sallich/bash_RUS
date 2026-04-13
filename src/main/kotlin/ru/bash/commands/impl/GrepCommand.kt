@@ -78,7 +78,7 @@ class GrepCommand : Command {
                     wholeWord = true
                 }
 
-                args[i] == "-A" && i + 1 < argv.size -> {
+                args[i] == "-A" && i + 1 < args.size -> {
                     addContext = args[++i].toIntOrNull() ?: 0
                 }
 
