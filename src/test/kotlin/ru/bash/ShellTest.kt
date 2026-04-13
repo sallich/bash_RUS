@@ -10,6 +10,7 @@ import ru.bash.commands.impl.CommandRegistryImpl
 import ru.bash.commands.impl.EchoCommand
 import ru.bash.commands.impl.ExitCommand
 import ru.bash.commands.impl.PwdCommand
+import ru.bash.commands.impl.WcCommand
 import ru.bash.executor.PipelineExecutor
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -19,7 +20,7 @@ import java.io.OutputStream
 class ShellTest {
 
     private val registry = CommandRegistryImpl(
-        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand())
+        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand())
     )
     private val err = ByteArrayOutputStream()
     private val executor = PipelineExecutor(registry, err)
@@ -114,4 +115,13 @@ class ShellTest {
         result.failed shouldBe false
         result.exitCodes shouldBe listOf(0)
     }
+
+    @Test
+    fun `executeLine pipeline echo to wc -w`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("echo one two three | wc -w")
+        result.exitCodes shouldBe listOf(0, 0)
+        out.toString().trim() shouldBe "3"
+    }
+
 }
