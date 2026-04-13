@@ -8,7 +8,7 @@ class PwdCommand : Command {
     override val name = "pwd"
     override val maxArgs = 0
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream): Int {
+    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
         validateArgs(argv)
         val cwd = System.getProperty("user.dir")
         stdout.write("$cwd\n".toByteArray())

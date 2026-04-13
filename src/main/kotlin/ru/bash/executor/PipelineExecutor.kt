@@ -35,7 +35,7 @@ class PipelineExecutor(
 
             async(Dispatchers.IO) {
                 try {
-                    registry.resolve(cmd.name).execute(cmd.argv, cmdIn, cmdOut)
+                    registry.resolve(cmd.name).execute(cmd.argv, cmdIn, cmdOut, stderr)
                 } catch (e: IOException) {
                     stderr.write("${cmd.name}: ${e.message}\n".toByteArray())
                     FAILURE_EXIT_CODE
