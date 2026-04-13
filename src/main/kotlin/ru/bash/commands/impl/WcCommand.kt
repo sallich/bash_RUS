@@ -48,27 +48,31 @@ class WcCommand : Command {
     }
 
     private fun parseArguments(argv: List<String>): Pair<Options, List<String>> {
-        var lines = false
-        var words = false
-        var bytes = false
         val files = mutableListOf<String>()
+        var options = Options()
 
         for (arg in argv.drop(1)) {
-            if (arg.startsWith("-") && arg.length > 1 && !files.isNotEmpty()) {
-                for (ch in arg.drop(1)) {
-                    when (ch) {
-                        'l' -> lines = true
-                        'w' -> words = true
-                        'c' -> bytes = true
-                        else -> { /* ignore unknown flags */ }
-                    }
-                }
+            if (arg.startsWith("-") && arg.length > 1 && files.isEmpty()) {
+                options = applyFlags(options, arg.drop(1))
             } else {
                 files.add(arg)
             }
         }
 
-        return Pair(Options(lines, words, bytes), files)
+        return Pair(options, files)
+    }
+
+    private fun applyFlags(options: Options, flags: String): Options {
+        var result = options
+        for (ch in flags) {
+            result = when (ch) {
+                'l' -> result.copy(lines = true)
+                'w' -> result.copy(words = true)
+                'c' -> result.copy(bytes = true)
+                else -> result
+            }
+        }
+        return result
     }
 
     private fun count(stream: InputStream): Counts {
