@@ -9,13 +9,13 @@ class ExternalCommand(
 ) : Command {
 
     private fun fixDottedCommand(argv: List<String>): List<String> {
-        if (argv.isEmpty()) return argv
-
-        if (argv[0] == "./" && argv.size > 1) {
-            return listOf("./" + argv[1]) + argv.drop(2)
+        val result = when {
+            argv.isEmpty() -> argv
+            argv[0] == "./" && argv.size > 1 ->
+                listOf("./" + argv[1]) + argv.drop(2)
+            else -> argv
         }
-
-        return argv
+        return result
     }
 
     override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {

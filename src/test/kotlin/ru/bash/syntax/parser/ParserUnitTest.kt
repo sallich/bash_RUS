@@ -22,7 +22,7 @@ class ParserUnitTest {
         val line = "echo hello"
         val ast = Parser(Lexer(line).tokenize(), line).parse() as PipelineNode
         ast.nodes.size shouldBe 1
-        ast.nodes[0].name shouldBe "echo"
+        ast.nodes[0].name shouldBe WordNode("echo")
     }
 
     @Test
@@ -115,9 +115,9 @@ class ParserUnitTest {
     @Test
     fun `pipeline parsing cases`() {
         val cases = listOf(
-            "a" to listOf("a"),
-            "a | b" to listOf("a", "b"),
-            "a | b | c" to listOf("a", "b", "c")
+            "a" to listOf(WordNode("a")),
+            "a | b" to listOf(WordNode("a"), WordNode("b")),
+            "a | b | c" to listOf(WordNode("a"), WordNode("b"), WordNode("c"))
         )
         for ((input, expected) in cases) {
             val ast = parse(input)

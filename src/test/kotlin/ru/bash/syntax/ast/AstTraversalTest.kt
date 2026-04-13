@@ -23,7 +23,7 @@ class AstTraversalTest {
         val ast = parse("echo hello world")
         walk(ast) shouldBe listOf(
             "Pipeline",
-            "Command:echo",
+            "Command:WordNode(value=echo)",
             "Word:hello",
             "Word:world"
         )
@@ -34,11 +34,11 @@ class AstTraversalTest {
         val ast = parse("grep x | wc -l | cat")
         walk(ast) shouldBe listOf(
             "Pipeline",
-            "Command:grep",
+            "Command:WordNode(value=grep)",
             "Word:x",
-            "Command:wc",
+            "Command:WordNode(value=wc)",
             "Word:-l",
-            "Command:cat"
+            "Command:WordNode(value=cat)"
         )
     }
 
@@ -47,7 +47,7 @@ class AstTraversalTest {
         val ast = parse("echo hello\$USER")
         walk(ast) shouldBe listOf(
             "Pipeline",
-            "Command:echo",
+            "Command:WordNode(value=echo)",
             "ShellWord:2",
             "Word:hello",
             "Var:USER"
@@ -59,7 +59,7 @@ class AstTraversalTest {
         val ast = parse("echo \$a\$b\$c")
         walk(ast) shouldBe listOf(
             "Pipeline",
-            "Command:echo",
+            "Command:WordNode(value=echo)",
             "ShellWord:3",
             "Var:a",
             "Var:b",
@@ -72,7 +72,7 @@ class AstTraversalTest {
         val ast = parse("echo \"double here\" 'single here'")
         walk(ast) shouldBe listOf(
             "Pipeline",
-            "Command:echo",
+            "Command:WordNode(value=echo)",
             "String:double here",
             "SingleQuoted:single here"
         )
@@ -83,7 +83,7 @@ class AstTraversalTest {
         val ast = parse("echo \"pre\"suf")
         walk(ast) shouldBe listOf(
             "Pipeline",
-            "Command:echo",
+            "Command:WordNode(value=echo)",
             "ShellWord:2",
             "String:pre",
             "Word:suf"
@@ -95,7 +95,7 @@ class AstTraversalTest {
         val ast = parse("pwd")
         walk(ast) shouldBe listOf(
             "Pipeline",
-            "Command:pwd"
+            "Command:WordNode(value=pwd)"
         )
     }
 
@@ -104,7 +104,7 @@ class AstTraversalTest {
         val ast = parse("echo \$PATH")
         walk(ast) shouldBe listOf(
             "Pipeline",
-            "Command:echo",
+            "Command:WordNode(value=echo)",
             "Var:PATH"
         )
     }
@@ -113,7 +113,7 @@ class AstTraversalTest {
     @MethodSource("mixedShellWordCases")
     fun `traverse mixed glued parts`(input: String, expectedTail: List<String>) {
         val ast = parse(input)
-        val full = listOf("Pipeline", "Command:echo") + expectedTail
+        val full = listOf("Pipeline", "Command:WordNode(value=echo)") + expectedTail
         walk(ast) shouldBe full
     }
 
