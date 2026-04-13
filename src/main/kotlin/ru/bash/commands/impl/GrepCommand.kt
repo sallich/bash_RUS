@@ -9,12 +9,12 @@ class GrepCommand : Command {
     override val name = "grep"
 
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream): Int {
+    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
         var exitCode = 1
         val (options, pattern, files) = parseArguments(argv)
         if (pattern == null && files.isEmpty()) {
-            stdout.write("grep: [OPTION]... PATTERNS [FILE]...\n".toByteArray())
-            exitCode = 2
+            stderr.write("grep: [OPTION]... PATTERNS [FILE]...\n".toByteArray())
+            exitCode = 2    
             return exitCode
         }
         val searchingStrategy = when {
@@ -38,7 +38,7 @@ class GrepCommand : Command {
             for (path in files) {
                 val file = File(path)
                 if (!file.exists()) {
-                    stdout.write("grep: $path: No such file or directory\n".toByteArray())
+                    stderr.write("grep: $path: No such file or directory\n".toByteArray())
                     exitCode = 2
                     continue
                 }

@@ -20,7 +20,8 @@ class GrepCommandTest {
         val code = grep.execute(
             listOf("grep", ""),
             stdin,
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "grep me please\n"
@@ -33,7 +34,8 @@ class GrepCommandTest {
         val code = grep.execute(
             listOf("grep", "-c", "a"),
             stdin,
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "1\n"
@@ -46,7 +48,8 @@ class GrepCommandTest {
         val code = grep.execute(
             listOf("grep", "-c", "-i", "A"),
             stdin,
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "1\n"
@@ -60,7 +63,8 @@ class GrepCommandTest {
         val code = grep.execute(
             listOf("grep", "", file.toString()),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "file content\n"
@@ -74,7 +78,8 @@ class GrepCommandTest {
         val code = grep.execute(
             listOf("grep", "-i", "e", file.toString()),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "TEST\n"
@@ -88,7 +93,8 @@ class GrepCommandTest {
         val code = grep.execute(
             listOf("grep", "-A", "2", "TEST", file.toString()),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "TEST\n" +
@@ -104,7 +110,8 @@ class GrepCommandTest {
         val code = grep.execute(
             listOf("grep", "TEST", file.toString()),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "TEST\n"
@@ -119,7 +126,8 @@ class GrepCommandTest {
         val code = grep.execute(
             listOf("grep", "file", file1.toString(), file2.toString()),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "$file1:file1 content\n$file2:file2 content\n"
@@ -134,7 +142,8 @@ class GrepCommandTest {
         val code1 = grep.execute(
             listOf("grep", "-w", "file", file1.toString(), file2.toString()),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code1 shouldBe 1
         out.toString() shouldBe ""
@@ -142,7 +151,8 @@ class GrepCommandTest {
         val code2 = grep.execute(
             listOf("grep", "-w", "content", file1.toString(), file2.toString()),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
 
         code2 shouldBe 0
@@ -160,7 +170,8 @@ class GrepCommandTest {
         val code = grep.execute(
             listOf("grep", "-l", "file", file1.toString(), file2.toString()),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "$file1\n$file2\n"
@@ -169,14 +180,31 @@ class GrepCommandTest {
     @Test
     fun `grep search from not exist file`(@TempDir dir: Path) {
         val out = ByteArrayOutputStream()
+        val err = ByteArrayOutputStream()
         val code = grep.execute(
             listOf("grep", "", "/nonexistent/file.txt"),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            err
         )
 
         code shouldBe 2
-        out.toString() shouldContain "No such file or directory"
+        err.toString() shouldContain "No such file or directory"
+    }
+
+    @Test
+    fun `grep search without pattern from not exist file`(@TempDir dir: Path) {
+        val out = ByteArrayOutputStream()
+        val err = ByteArrayOutputStream()
+        val code = grep.execute(
+            listOf("grep"),
+            ByteArrayInputStream(ByteArray(0)),
+            out,
+            err
+        )
+
+        code shouldBe 2
+        err.toString() shouldBe "grep: [OPTION]... PATTERNS [FILE]...\n"
     }
 
     @Test
@@ -186,7 +214,8 @@ class GrepCommandTest {
         val code = grep.execute(
             listOf("grep", "abc"),
             stdin,
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 1
         out.toString() shouldBe ""
