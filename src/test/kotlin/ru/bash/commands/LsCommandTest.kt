@@ -104,6 +104,23 @@ class LsCommandTest {
     }
 
     @Test
+    fun `ls returns 1 and writes to stderr for directory without read permission`(@TempDir dir: Path) {
+        val unreadable = dir.resolve("locked").also { it.createDirectory() }
+        val file = unreadable.toFile()
+        check(file.setReadable(false, false)) { "cannot drop read permission on $unreadable" }
+        try {
+            val out = ByteArrayOutputStream()
+            val err = ByteArrayOutputStream()
+            val code = ls.execute(listOf("ls", unreadable.toString()), emptyStdin, out, err)
+            code shouldBe 1
+            out.toString() shouldBe ""
+            err.toString() shouldContain "Permission denied"
+        } finally {
+            file.setReadable(true, true)
+        }
+    }
+
+    @Test
     fun `ls continues after a missing path`(@TempDir dir: Path) {
         dir.resolve("ok.txt").writeText("")
 

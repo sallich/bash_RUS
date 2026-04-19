@@ -28,11 +28,19 @@ class LsCommand : Command {
             }
 
             if (file.isDirectory) {
-                file.listFiles()
-                    ?.map { it.name }
-                    ?.filterNot { it.startsWith(".") }
-                    ?.sorted()
-                    ?.forEach { stdout.write("$it\n".toByteArray()) }
+                val entries = if (file.canRead()) file.listFiles() else null
+                if (entries == null) {
+                    stdout.flush()
+                    stderr.write("ls: cannot open directory '$path': Permission denied\n".toByteArray())
+                    stderr.flush()
+                    exitCode = 1
+                    return@forEachIndexed
+                }
+                entries
+                    .map { it.name }
+                    .filterNot { it.startsWith(".") }
+                    .sorted()
+                    .forEach { stdout.write("$it\n".toByteArray()) }
             } else {
                 stdout.write("$path\n".toByteArray())
             }
