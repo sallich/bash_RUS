@@ -6,6 +6,7 @@ import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import ru.bash.commands.impl.CatCommand
+import ru.bash.commands.impl.CdCommand
 import ru.bash.commands.impl.CommandRegistryImpl
 import ru.bash.commands.impl.EchoCommand
 import ru.bash.commands.impl.ExitCommand
@@ -20,7 +21,7 @@ import java.io.OutputStream
 class ShellTest {
 
     private val registry = CommandRegistryImpl(
-        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand())
+        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand(), CdCommand())
     )
     private val err = ByteArrayOutputStream()
     private val executor = PipelineExecutor(registry, err)
@@ -122,6 +123,14 @@ class ShellTest {
         val result = shell(out).executeLine("echo one two three | wc -w")
         result.exitCodes shouldBe listOf(0, 0)
         out.toString().trim() shouldBe "3"
+    }
+
+    @Test
+    fun `run cd and pwd`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("cd | pwd")
+        result.exitCodes shouldBe listOf(0, 0)
+        out.toString() shouldBe System.getProperty("user.home") + "\n"
     }
 
 }
