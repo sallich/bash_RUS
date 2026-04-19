@@ -124,4 +124,38 @@ class ShellTest {
         out.toString().trim() shouldBe "3"
     }
 
+    @Test
+    fun `executeLine dollar question expands last exit code`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val s = shell(out)
+        s.executeLine("cat /no/such/file")
+        val result = s.executeLine("echo " + "$" + "?")
+        result.failed shouldBe false
+        out.toString().trim() shouldBe "1"
+    }
+
+    @Test
+    fun `executeLine arithmetic expansion`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("echo " + "$" + "((1+2*3))")
+        result.failed shouldBe false
+        out.toString() shouldBe "7\n"
+    }
+
+    @Test
+    fun `executeLine command substitution`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("echo " + "$" + "(echo sub)")
+        result.failed shouldBe false
+        out.toString() shouldBe "sub\n"
+    }
+
+    @Test
+    fun `executeLine nested command substitution`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("echo " + "$" + "(echo " + "$" + "(echo inner))")
+        result.failed shouldBe false
+        out.toString() shouldBe "inner\n"
+    }
+
 }

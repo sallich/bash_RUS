@@ -8,6 +8,9 @@ import ru.bash.syntax.ast.PipelineNode
 import ru.bash.syntax.ast.ShellWordNode
 import ru.bash.syntax.ast.SingleQuotedNode
 import ru.bash.syntax.ast.StringNode
+import ru.bash.syntax.ast.ArithmeticExpansionNode
+import ru.bash.syntax.ast.CommandSubstitutionNode
+import ru.bash.syntax.ast.ExitStatusNode
 import ru.bash.syntax.ast.VariableNode
 import ru.bash.syntax.ast.WordNode
 import ru.bash.syntax.errors.ParseException
@@ -24,6 +27,9 @@ class Parser(
         private val ARG_TOKEN_TYPES = setOf(
             TokenType.WORD,
             TokenType.VAR,
+            TokenType.EXIT_STATUS,
+            TokenType.COMMAND_SUBSTITUTION,
+            TokenType.ARITHMETIC_EXPANSION,
             TokenType.SINGLE_QUOTED,
             TokenType.DOUBLE_QUOTED_LITERAL,
         )
@@ -158,6 +164,9 @@ class Parser(
     private fun argumentNodeFor(token: Token): ArgumentNode = when (token.type) {
         TokenType.WORD -> WordNode(token.text)
         TokenType.VAR -> VariableNode(token.text)
+        TokenType.EXIT_STATUS -> ExitStatusNode
+        TokenType.COMMAND_SUBSTITUTION -> CommandSubstitutionNode(token.text)
+        TokenType.ARITHMETIC_EXPANSION -> ArithmeticExpansionNode(token.text)
         TokenType.SINGLE_QUOTED -> SingleQuotedNode(token.text)
         TokenType.DOUBLE_QUOTED_LITERAL -> StringNode(token.text)
         else -> error("Unreachable: ${token.type} not in ARG_TOKEN_TYPES")

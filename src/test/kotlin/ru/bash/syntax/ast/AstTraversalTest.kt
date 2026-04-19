@@ -177,6 +177,18 @@ private class RecordingAstVisitor : AstVisitor<Unit> {
         events += "Var:${node.value}"
     }
 
+    override fun visitExitStatus(node: ExitStatusNode) {
+        events += "ExitStatus"
+    }
+
+    override fun visitCommandSubstitution(node: CommandSubstitutionNode) {
+        events += "CmdSubst:${node.inner}"
+    }
+
+    override fun visitArithmeticExpansion(node: ArithmeticExpansionNode) {
+        events += "Arith:${node.expression}"
+    }
+
     override fun visitAssign(node: AssignNode) {
         events += "Assign:${node.name}"
         node.value.accept(this)
