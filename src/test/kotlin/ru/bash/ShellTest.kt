@@ -143,6 +143,15 @@ class ShellTest {
     }
 
     @Test
+    fun `executeLine arithmetic expansion supports variables`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val s = shell(out, mapOf("x" to "5"))
+        val result = s.executeLine("echo " + "$" + "((x+1))")
+        result.failed shouldBe false
+        out.toString() shouldBe "6\n"
+    }
+
+    @Test
     fun `executeLine command substitution`(): Unit = runBlocking {
         val out = ByteArrayOutputStream()
         val result = shell(out).executeLine("echo " + "$" + "(echo sub)")
@@ -156,6 +165,18 @@ class ShellTest {
         val result = shell(out).executeLine("echo " + "$" + "(echo " + "$" + "(echo inner))")
         result.failed shouldBe false
         out.toString() shouldBe "inner\n"
+    }
+
+    @Test
+    fun `assignment with substitution propagates substitution exit code to dollar question`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val s = shell(out)
+        val assignmentResult = s.executeLine("X=" + "$" + "(false)")
+        assignmentResult.lastExitCode shouldBe 1
+
+        val statusResult = s.executeLine("echo " + "$" + "?")
+        statusResult.failed shouldBe false
+        out.toString().trim() shouldBe "1"
     }
 
 }

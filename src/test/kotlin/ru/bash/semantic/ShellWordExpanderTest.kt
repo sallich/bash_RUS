@@ -16,7 +16,8 @@ class ShellWordExpanderTest {
 
     private val env = mapOf(
         "A" to "alpha",
-        "B" to "beta"
+        "B" to "beta",
+        "X" to "5"
     )
 
     private val noSubst = CommandSubstitutionRunner {
@@ -82,6 +83,16 @@ class ShellWordExpanderTest {
     @Test
     fun `arithmetic expansion`(): Unit = runBlocking {
         expander().expand(ArithmeticExpansionNode("1 + 2 * 3")) shouldBe "7"
+    }
+
+    @Test
+    fun `arithmetic expansion supports bare variable names`(): Unit = runBlocking {
+        expander().expand(ArithmeticExpansionNode("X + 1")) shouldBe "6"
+    }
+
+    @Test
+    fun `arithmetic expansion supports dollar variables`(): Unit = runBlocking {
+        expander().expand(ArithmeticExpansionNode("\$X + 2")) shouldBe "7"
     }
 
     @Test

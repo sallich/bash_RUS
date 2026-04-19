@@ -30,6 +30,7 @@ class Shell(
 ) {
     private val environment: MutableMap<String, String> = HashMap(environment)
     private var lastExitCode: Int = 0
+    private var lastSubstitutionExitCode: Int? = null
 
     @Suppress("SwallowedException")
     fun run(): Unit = runBlocking {
@@ -57,6 +58,7 @@ class Shell(
     suspend fun executeLine(line: String): PipelineResult {
         val trimmed = line.trim()
         if (trimmed.isEmpty()) return PipelineResult(emptyList())
+        lastSubstitutionExitCode = null
         val tokens = Lexer(trimmed).tokenize()
         val ast = Parser(tokens, trimmed).parse()
         val substitution = CommandSubstitutionRunner { inner -> captureSubstitution(inner) }
@@ -68,7 +70,8 @@ class Shell(
                 )
                 val value = expander.expand(ast.value)
                 environment[ast.name] = value
-                val result = PipelineResult(listOf(0))
+                val assignmentExitCode = lastSubstitutionExitCode ?: 0
+                val result = PipelineResult(listOf(assignmentExitCode))
                 lastExitCode = result.lastExitCode
                 result
             }
@@ -101,7 +104,8 @@ class Shell(
             is PipelineNode -> {
                 val model = RuntimeBuildVisitor(expander).build(ast)
                 val out = ByteArrayOutputStream()
-                executor.execute(model, ByteArrayInputStream(ByteArray(0)), out)
+                val result = executor.execute(model, ByteArrayInputStream(ByteArray(0)), out)
+                lastSubstitutionExitCode = result.lastExitCode
                 stripTrailingNewlines(String(out.toByteArray(), StandardCharsets.UTF_8))
             }
             else -> error("Unexpected AST in command substitution")
