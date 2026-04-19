@@ -25,7 +25,7 @@ import kotlin.io.path.writeText
 class ShellTest {
 
     private val registry = CommandRegistryImpl(
-        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand(), LsCommand())
+        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand(), LsCommand(), CdCommand())
     )
     private val err = ByteArrayOutputStream()
     private val executor = PipelineExecutor(registry, err)
@@ -131,12 +131,15 @@ class ShellTest {
 
     @Test
 <<<<<<< HEAD
+<<<<<<< HEAD
     fun `run cd and pwd`(): Unit = runBlocking {
         val out = ByteArrayOutputStream()
         val result = shell(out).executeLine("cd | pwd")
         result.exitCodes shouldBe listOf(0, 0)
         out.toString() shouldBe System.getProperty("user.home") + "\n"
 =======
+=======
+>>>>>>> 1d91743 (cd fix)
     fun `executeLine ls lists directory contents`(@TempDir dir: Path): Unit = runBlocking {
         dir.resolve("a.txt").writeText("")
         dir.resolve("b.txt").writeText("")
@@ -157,7 +160,17 @@ class ShellTest {
         val result = shell(out).executeLine("ls $dir | wc -l")
         result.exitCodes shouldBe listOf(0, 0)
         out.toString().trim() shouldBe "3"
+<<<<<<< HEAD
 >>>>>>> 44d502f (ls command)
+=======
+=======
+    fun `run cd and pwd`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("cd | pwd")
+        result.exitCodes shouldBe listOf(0, 0)
+        out.toString() shouldBe System.getProperty("user.home") + "\n"
+>>>>>>> a506fd7 (cd fix)
+>>>>>>> 1d91743 (cd fix)
     }
 
 }
