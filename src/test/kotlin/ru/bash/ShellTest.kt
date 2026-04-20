@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Path
+import java.nio.file.Paths
 import kotlin.io.path.writeText
 
 class ShellTest {
@@ -150,13 +151,13 @@ class ShellTest {
         val result = shell(out).executeLine("ls $dir | wc -l")
         result.exitCodes shouldBe listOf(0, 0)
         out.toString().trim() shouldBe "3"
-    
-    @Test
-    fun `run cd and pwd`(): Unit = runBlocking {
-        val out = ByteArrayOutputStream()
-        val result = shell(out).executeLine("cd | pwd")
-        result.exitCodes shouldBe listOf(0, 0)
-        out.toString() shouldBe Paths.get(System.getProperty("user.home")).toAbsolutePath().toString() + "\n"
-    }
 
+        @Test
+        fun `run cd and pwd`(): Unit = runBlocking {
+            val out = ByteArrayOutputStream()
+            val result = shell(out).executeLine("cd | pwd")
+            result.exitCodes shouldBe listOf(0, 0)
+            out.toString() shouldBe Paths.get(System.getProperty("user.home")).toAbsolutePath().toString() + "\n"
+        }
+    }
 }
