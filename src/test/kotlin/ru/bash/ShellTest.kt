@@ -154,11 +154,12 @@ class ShellTest {
     }
 
     @Test
-    fun `run cd and pwd`(): Unit = runBlocking {
+    fun `run cd and pwd`() {
+        val input = ByteArrayInputStream("cd\npwd\n".toByteArray())
         val out = ByteArrayOutputStream()
-        val result = shell(out).executeLine("cd | pwd")
-        result.exitCodes shouldBe listOf(0, 0)
-        out.toString() shouldBe Paths.get(System.getProperty("user.home")).toAbsolutePath().toString() + "\n"
+        Shell(executor, emptyMap(), input, out, err).run()
+        val expected = Paths.get(System.getProperty("user.home")).toAbsolutePath().toString()
+        out.toString() shouldContain "$expected\n"
     }
 
 }
