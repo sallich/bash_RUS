@@ -15,6 +15,8 @@ import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class Shell(
     private val executor: PipelineExecutor,
@@ -24,6 +26,10 @@ class Shell(
     private val stderr: OutputStream = System.err,
 ) {
     private val environment: MutableMap<String, String> = HashMap(environment)
+
+    class ShellEnvironment (
+        var currentWorkingDirectory: Path = Paths.get(System.getProperty("user.dir"))
+    )
 
     @Suppress("SwallowedException")
     fun run(): Unit = runBlocking {

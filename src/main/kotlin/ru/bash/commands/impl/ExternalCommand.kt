@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
+import ru.bash.Shell
 import ru.bash.commands.Command
 import java.io.InputStream
 import java.io.OutputStream
@@ -18,7 +19,13 @@ class ExternalCommand(
         else -> argv
     }
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
+    override fun execute(
+        argv: List<String>,
+        stdin: InputStream,
+        stdout: OutputStream,
+        stderr: OutputStream,
+        environment: Shell.ShellEnvironment
+    ): Int {
         val fixedArgv = fixDottedCommand(argv)
         val inheritStdin = stdin === System.`in`
 
