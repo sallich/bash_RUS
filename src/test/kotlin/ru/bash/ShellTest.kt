@@ -25,7 +25,7 @@ import kotlin.io.path.writeText
 class ShellTest {
 
     private val registry = CommandRegistryImpl(
-        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand(), LsCommand(), CdCommand())
+        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand(), LsCommand())
     )
     private val err = ByteArrayOutputStream()
     private val executor = PipelineExecutor(registry, err)

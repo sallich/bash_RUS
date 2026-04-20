@@ -13,7 +13,7 @@ import ru.bash.executor.PipelineExecutor
 
 fun main() {
     val registry = CommandRegistryImpl(
-        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), GrepCommand(), WcCommand(), LsCommand(), CdCommand())
+        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), GrepCommand(), WcCommand(), LsCommand())
     )
     val executor = PipelineExecutor(registry)
     Shell(executor).run()
