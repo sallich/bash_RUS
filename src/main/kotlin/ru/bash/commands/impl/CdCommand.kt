@@ -1,7 +1,7 @@
 package ru.bash.commands.impl
 
+import ru.bash.Shell
 import ru.bash.commands.Command
-import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Files
@@ -14,18 +14,22 @@ class CdCommand : Command {
         argv: List<String>,
         stdin: InputStream,
         stdout: OutputStream,
-        stderr: OutputStream
+        stderr: OutputStream,
+        environment: Shell.ShellEnvironment
     ): Int {
-        val currentDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize()
         val args = argv.drop(1)
         val newPath = when {
             args.isEmpty() -> Paths.get(System.getProperty("user.home"))
             else -> Paths.get(args[0])
         }
-        val resolved = if (newPath.isAbsolute) newPath else currentDir.resolve(newPath).normalize()
+        val resolved = if (newPath.isAbsolute) {
+            newPath.normalize()
+        } else {
+            environment.currentWorkingDirectory.resolve(newPath).normalize()
+        }
         try {
             if (Files.isDirectory(resolved)) {
-                System.setProperty("user.dir", resolved.normalize().toString())
+                environment.currentWorkingDirectory = resolved
                 return 0
             } else if (Files.isRegularFile(resolved)) {
                 stderr.write("cd: Not a directory: ${args[0]}\n".toByteArray())

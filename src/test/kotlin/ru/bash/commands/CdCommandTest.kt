@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.io.TempDir
+import ru.bash.Shell
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -17,44 +18,47 @@ class CdCommandTest {
 
     @Test
     fun `cd to the home directory`() {
+        val env = Shell.ShellEnvironment()
         val code = cd.execute(
             listOf("cd"),
             ByteArrayInputStream(ByteArray(0)),
             ByteArrayOutputStream(),
-            ByteArrayOutputStream()
+            ByteArrayOutputStream(),
+            env
         )
         val homeDir = System.getProperty("user.home")
-        val curDir = System.getProperty("user.dir")
         code shouldBe 0
-        curDir shouldBe homeDir
+        env.currentWorkingDirectory.toString() shouldBe homeDir
     }
 
     @Test
     fun `cd to the temp directory`(@TempDir dir: Path) {
+        val env = Shell.ShellEnvironment()
         val code = cd.execute(
             listOf("cd", dir.toAbsolutePath().toString()),
             ByteArrayInputStream(ByteArray(0)),
             ByteArrayOutputStream(),
-            ByteArrayOutputStream()
+            ByteArrayOutputStream(),
+            env
         )
-        val curDir = System.getProperty("user.dir")
         println(dir.toString())
         code shouldBe 0
-        curDir shouldBe dir.toAbsolutePath().toString()
+        env.currentWorkingDirectory.toString() shouldBe dir.toAbsolutePath().toString()
     }
 
     @Test
     fun `cd to the temp directory with different path`(@TempDir dir: Path) {
+        val env = Shell.ShellEnvironment()
         val code = cd.execute(
             listOf("cd", dir.toAbsolutePath().toString() + File.separator + ".." + File.separator + dir.fileName),
             ByteArrayInputStream(ByteArray(0)),
             ByteArrayOutputStream(),
-            ByteArrayOutputStream()
+            ByteArrayOutputStream(),
+            env
         )
-        val curDir = System.getProperty("user.dir")
         println(dir.toString())
         code shouldBe 0
-        curDir shouldBe dir.toAbsolutePath().toString()
+        env.currentWorkingDirectory.toString() shouldBe dir.toAbsolutePath().toString()
     }
 
     @Test
@@ -62,14 +66,16 @@ class CdCommandTest {
         val origDir = System.getProperty("user.dir")
         val file = dir.resolve("1.txt").also { it.writeText("file1 content") }
         val err = ByteArrayOutputStream()
+        val env = Shell.ShellEnvironment()
         val code = cd.execute(
             listOf("cd", file.toAbsolutePath().toString()),
             ByteArrayInputStream(ByteArray(0)),
             ByteArrayOutputStream(),
-            err
+            err,
+            env
         )
         err.toString() shouldContain "Not a directory"
-        origDir shouldBe System.getProperty("user.dir")
+        origDir shouldBe env.currentWorkingDirectory.toString()
         code shouldBe 1
     }
 
@@ -81,7 +87,8 @@ class CdCommandTest {
             listOf("cd", dir.toAbsolutePath().toString()),
             ByteArrayInputStream(ByteArray(0)),
             ByteArrayOutputStream(),
-            err
+            err,
+            Shell.ShellEnvironment()
         )
         err.toString() shouldContain "No such file or directory"
         code shouldBe 1
