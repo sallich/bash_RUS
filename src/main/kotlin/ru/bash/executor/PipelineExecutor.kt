@@ -6,6 +6,10 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import ru.bash.commands.CommandRegistry
 import ru.bash.semantic.model.ExecPipeline
+import ru.bash.semantic.model.Redirect
+import java.io.Closeable
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -34,8 +38,25 @@ class PipelineExecutor(
             val cmdOut: OutputStream = if (i < n - 1) pipeOuts[i] else stdout
 
             async(Dispatchers.IO) {
+                var effectiveIn: InputStream = cmdIn
+                var effectiveOut: OutputStream = cmdOut
+                val toClose = mutableListOf<Closeable>()
                 try {
-                    registry.resolve(cmd.name).execute(cmd.argv, cmdIn, cmdOut, stderr)
+                    for (r in cmd.redirects) {
+                        when (r) {
+                            is Redirect.Out -> {
+                                val fs = FileOutputStream(r.path, r.append)
+                                toClose += fs
+                                effectiveOut = fs
+                            }
+                            is Redirect.In -> {
+                                val fs = FileInputStream(r.path)
+                                toClose += fs
+                                effectiveIn = fs
+                            }
+                        }
+                    }
+                    registry.resolve(cmd.name).execute(cmd.argv, effectiveIn, effectiveOut, stderr)
                 } catch (e: IOException) {
                     stderr.write("${cmd.name}: ${e.message}\n".toByteArray())
                     FAILURE_EXIT_CODE
@@ -44,6 +65,7 @@ class PipelineExecutor(
                     FAILURE_EXIT_CODE
                 } finally {
                     if (cmdOut !== stdout) cmdOut.close()
+                    toClose.forEach { runCatching { it.close() } }
                 }
             }
         }
