@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import ru.bash.commands.impl.CatCommand
+import ru.bash.commands.impl.CdCommand
 import ru.bash.commands.impl.CommandRegistryImpl
 import ru.bash.commands.impl.EchoCommand
 import ru.bash.commands.impl.ExitCommand
@@ -19,12 +20,13 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Path
+import java.nio.file.Paths
 import kotlin.io.path.writeText
 
 class ShellTest {
 
     private val registry = CommandRegistryImpl(
-        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand(), LsCommand())
+        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand(), LsCommand(), CdCommand())
     )
     private val err = ByteArrayOutputStream()
     private val executor = PipelineExecutor(registry, err)
@@ -149,6 +151,15 @@ class ShellTest {
         val result = shell(out).executeLine("ls $dir | wc -l")
         result.exitCodes shouldBe listOf(0, 0)
         out.toString().trim() shouldBe "3"
+    }
+
+    @Test
+    fun `run cd and pwd`() {
+        val input = ByteArrayInputStream("cd\npwd\n".toByteArray())
+        val out = ByteArrayOutputStream()
+        Shell(executor, emptyMap(), input, out, err).run()
+        val expected = Paths.get(System.getProperty("user.home")).toAbsolutePath().toString()
+        out.toString() shouldContain "$expected\n"
     }
 
 }
