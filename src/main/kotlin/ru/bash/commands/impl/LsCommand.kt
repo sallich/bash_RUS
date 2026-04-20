@@ -1,5 +1,6 @@
 package ru.bash.commands.impl
 
+import ru.bash.Shell
 import ru.bash.commands.Command
 import java.io.File
 import java.io.InputStream
@@ -8,7 +9,13 @@ import java.io.OutputStream
 class LsCommand : Command {
     override val name = "ls"
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
+    override fun execute(
+        argv: List<String>,
+        stdin: InputStream,
+        stdout: OutputStream,
+        stderr: OutputStream,
+        environment: Shell.ShellEnvironment
+    ): Int {
         val paths = argv.drop(1).ifEmpty { listOf(System.getProperty("user.dir")) }
         val showHeaders = paths.size > 1
 
