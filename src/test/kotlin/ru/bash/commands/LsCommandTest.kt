@@ -4,6 +4,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import ru.bash.Shell
 import ru.bash.commands.impl.LsCommand
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -16,10 +17,13 @@ class LsCommandTest {
     private val ls = LsCommand()
     private val emptyStdin = ByteArrayInputStream(ByteArray(0))
 
-    private fun run(vararg argv: String): Pair<String, String> {
+    private fun run(
+        vararg argv: String,
+        env: Shell.ShellEnvironment = Shell.ShellEnvironment(),
+    ): Pair<String, String> {
         val out = ByteArrayOutputStream()
         val err = ByteArrayOutputStream()
-        ls.execute(listOf("ls", *argv), emptyStdin, out, err)
+        ls.execute(listOf("ls", *argv), emptyStdin, out, err, env)
         return out.toString() to err.toString()
     }
 
@@ -93,14 +97,17 @@ class LsCommandTest {
     @Test
     fun `ls with no args lists current working directory`(@TempDir dir: Path) {
         dir.resolve("only.txt").writeText("")
-        val original = System.getProperty("user.dir")
-        System.setProperty("user.dir", dir.toString())
-        try {
-            val (out, _) = run()
-            out shouldBe "only.txt\n"
-        } finally {
-            System.setProperty("user.dir", original)
-        }
+        val (out, _) = run(env = Shell.ShellEnvironment(currentWorkingDirectory = dir))
+        out shouldBe "only.txt\n"
+    }
+
+    @Test
+    fun `ls resolves relative paths against environment cwd`(@TempDir dir: Path) {
+        val sub = dir.resolve("sub").also { it.createDirectory() }
+        sub.resolve("a.txt").writeText("")
+
+        val (out, _) = run("sub", env = Shell.ShellEnvironment(currentWorkingDirectory = dir))
+        out shouldBe "a.txt\n"
     }
 
     @Test

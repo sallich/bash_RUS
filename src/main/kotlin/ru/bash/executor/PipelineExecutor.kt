@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import ru.bash.Shell
 import ru.bash.commands.CommandRegistry
 import ru.bash.semantic.model.ExecPipeline
 import ru.bash.semantic.model.Redirect
@@ -19,6 +20,7 @@ import java.io.PipedOutputStream
 class PipelineExecutor(
     private val registry: CommandRegistry,
     private val stderr: OutputStream = System.err,
+    private val environment: Shell.ShellEnvironment = Shell.ShellEnvironment()
 ) {
 
     suspend fun execute(
@@ -56,7 +58,7 @@ class PipelineExecutor(
                             }
                         }
                     }
-                    registry.resolve(cmd.name).execute(cmd.argv, effectiveIn, effectiveOut, stderr)
+                    registry.resolve(cmd.name).execute(cmd.argv, effectiveIn, effectiveOut, stderr, environment)
                 } catch (e: IOException) {
                     stderr.write("${cmd.name}: ${e.message}\n".toByteArray())
                     FAILURE_EXIT_CODE

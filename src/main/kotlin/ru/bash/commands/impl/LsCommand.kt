@@ -1,20 +1,26 @@
 package ru.bash.commands.impl
 
+import ru.bash.Shell
 import ru.bash.commands.Command
-import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 
 class LsCommand : Command {
     override val name = "ls"
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
-        val paths = argv.drop(1).ifEmpty { listOf(System.getProperty("user.dir")) }
+    override fun execute(
+        argv: List<String>,
+        stdin: InputStream,
+        stdout: OutputStream,
+        stderr: OutputStream,
+        environment: Shell.ShellEnvironment
+    ): Int {
+        val paths = argv.drop(1).ifEmpty { listOf(environment.currentWorkingDirectory.toString()) }
         val showHeaders = paths.size > 1
 
         var exitCode = 0
         paths.forEachIndexed { index, path ->
-            val file = File(path)
+            val file = resolve(environment, path)
             if (!file.exists()) {
                 stderr.write("ls: cannot access '$path': No such file or directory\n".toByteArray())
                 stderr.flush()
