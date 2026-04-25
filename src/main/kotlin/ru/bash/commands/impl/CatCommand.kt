@@ -1,14 +1,20 @@
 package ru.bash.commands.impl
 
+import ru.bash.Shell
 import ru.bash.commands.Command
-import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 
 class CatCommand : Command {
     override val name = "cat"
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
+    override fun execute(
+        argv: List<String>,
+        stdin: InputStream,
+        stdout: OutputStream,
+        stderr: OutputStream,
+        environment: Shell.ShellEnvironment
+    ): Int {
         val files = argv.drop(1)
 
         if (files.isEmpty()) {
@@ -19,7 +25,7 @@ class CatCommand : Command {
 
         var exitCode = 0
         for (path in files) {
-            val file = File(path)
+            val file = resolve(environment, path)
             if (!file.exists()) {
                 stderr.write("cat: $path: No such file or directory\n".toByteArray())
                 stderr.flush()

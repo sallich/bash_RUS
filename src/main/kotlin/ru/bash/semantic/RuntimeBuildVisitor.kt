@@ -2,6 +2,8 @@ package ru.bash.semantic
 
 import ru.bash.semantic.model.ExecCommand
 import ru.bash.semantic.model.ExecPipeline
+import ru.bash.semantic.model.Redirect
+import ru.bash.syntax.ast.RedirectNode
 import ru.bash.syntax.ast.CommandNode
 import ru.bash.syntax.ast.PipelineNode
 
@@ -27,6 +29,13 @@ class RuntimeBuildVisitor(
             .filter { it.isNotEmpty() }
             .forEach { argv += it }
 
-        return ExecCommand(argv)
+        val redirects = node.redirects.map { r ->
+            when (r) {
+                is RedirectNode.Out -> Redirect.Out(expander.expand(r.file).trim(), r.append)
+                is RedirectNode.In  -> Redirect.In(expander.expand(r.file).trim())
+            }
+        }
+
+        return ExecCommand(argv, redirects)
     }
 }

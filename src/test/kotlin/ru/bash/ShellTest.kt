@@ -5,22 +5,28 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import ru.bash.commands.impl.CatCommand
+import ru.bash.commands.impl.CdCommand
 import ru.bash.commands.impl.CommandRegistryImpl
 import ru.bash.commands.impl.EchoCommand
 import ru.bash.commands.impl.ExitCommand
 import ru.bash.commands.impl.PwdCommand
 import ru.bash.commands.impl.WcCommand
+import ru.bash.commands.impl.LsCommand
 import ru.bash.executor.PipelineExecutor
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import java.nio.file.Path
+import java.nio.file.Paths
+import kotlin.io.path.writeText
 
 class ShellTest {
 
     private val registry = CommandRegistryImpl(
-        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand())
+        listOf(EchoCommand(), PwdCommand(), CatCommand(), ExitCommand(), WcCommand(), LsCommand(), CdCommand())
     )
     private val err = ByteArrayOutputStream()
     private val executor = PipelineExecutor(registry, err)
@@ -177,6 +183,38 @@ class ShellTest {
         val statusResult = s.executeLine("echo " + "$" + "?")
         statusResult.failed shouldBe false
         out.toString().trim() shouldBe "1"
+    }
+
+    @Test
+    fun `executeLine ls lists directory contents`(@TempDir dir: Path): Unit = runBlocking {
+        dir.resolve("a.txt").writeText("")
+        dir.resolve("b.txt").writeText("")
+
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("ls $dir")
+        result.failed shouldBe false
+        out.toString() shouldBe "a.txt\nb.txt\n"
+    }
+
+    @Test
+    fun `executeLine pipeline ls to wc -l`(@TempDir dir: Path): Unit = runBlocking {
+        dir.resolve("a").writeText("")
+        dir.resolve("b").writeText("")
+        dir.resolve("c").writeText("")
+
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("ls $dir | wc -l")
+        result.exitCodes shouldBe listOf(0, 0)
+        out.toString().trim() shouldBe "3"
+    }
+
+    @Test
+    fun `run cd and pwd`() {
+        val input = ByteArrayInputStream("cd\npwd\n".toByteArray())
+        val out = ByteArrayOutputStream()
+        Shell(executor, emptyMap(), input, out, err).run()
+        val expected = Paths.get(System.getProperty("user.home")).toAbsolutePath().toString()
+        out.toString() shouldContain "$expected\n"
     }
 
 }

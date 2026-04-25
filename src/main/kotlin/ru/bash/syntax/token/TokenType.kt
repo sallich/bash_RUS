@@ -11,5 +11,6 @@ enum class TokenType {
     DOUBLE_QUOTED_LITERAL,
     REDIRECT_IN,
     REDIRECT_OUT,
+    REDIRECT_APPEND,
     EOF
 }

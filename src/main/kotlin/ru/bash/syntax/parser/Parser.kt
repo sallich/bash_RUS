@@ -5,6 +5,7 @@ import ru.bash.syntax.ast.AssignNode
 import ru.bash.syntax.ast.AstNode
 import ru.bash.syntax.ast.CommandNode
 import ru.bash.syntax.ast.PipelineNode
+import ru.bash.syntax.ast.RedirectNode
 import ru.bash.syntax.ast.ShellWordNode
 import ru.bash.syntax.ast.SingleQuotedNode
 import ru.bash.syntax.ast.StringNode
@@ -114,14 +115,22 @@ class Parser(
     private fun parseCommand(): CommandNode {
         val nameNode = parseShellWord()
             ?: throw ParseException("Expected command name", stream.peek().pos)
-
         val args = mutableListOf<ArgumentNode>()
-        while (true) {
-            val arg = parseShellWord() ?: break
-            args += arg
+        val redirects = mutableListOf<RedirectNode>()
+        while (!stream.end() && stream.peek().type != TokenType.PIPELINE) {
+            val type = stream.peek().type
+            if (type == TokenType.REDIRECT_OUT || type == TokenType.REDIRECT_APPEND || type == TokenType.REDIRECT_IN) {
+                val op = stream.next().text
+                val file = parseShellWord()
+                    ?: throw ParseException("Expected filename after '$op'", stream.peek().pos)
+                redirects += if (type == TokenType.REDIRECT_IN) RedirectNode.In(file)
+                else RedirectNode.Out(file, append = type == TokenType.REDIRECT_APPEND)
+            } else {
+                val arg = parseShellWord() ?: break
+                args += arg
+            }
         }
-
-        return CommandNode(nameNode, args)
+        return CommandNode(nameNode, args, redirects)
     }
 
     private fun parseShellWord(): ArgumentNode? {

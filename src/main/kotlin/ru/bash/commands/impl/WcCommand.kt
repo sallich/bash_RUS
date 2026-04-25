@@ -1,14 +1,20 @@
 package ru.bash.commands.impl
 
+import ru.bash.Shell
 import ru.bash.commands.Command
-import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 
 class WcCommand : Command {
     override val name = "wc"
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
+    override fun execute(
+        argv: List<String>,
+        stdin: InputStream,
+        stdout: OutputStream,
+        stderr: OutputStream,
+        environment: Shell.ShellEnvironment
+    ): Int {
         val (options, files) = parseArguments(argv)
         val showAll = !options.lines && !options.words && !options.bytes
 
@@ -25,7 +31,7 @@ class WcCommand : Command {
         var totalBytes = 0L
 
         for (path in files) {
-            val file = File(path)
+            val file = resolve(environment, path)
             if (!file.exists()) {
                 stderr.write("wc: $path: No such file or directory\n".toByteArray())
                 exitCode = 1

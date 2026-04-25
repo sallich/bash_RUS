@@ -1,7 +1,7 @@
 package ru.bash.commands.impl
 
+import ru.bash.Shell
 import ru.bash.commands.Command
-import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -9,7 +9,13 @@ class GrepCommand : Command {
     override val name = "grep"
 
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
+    override fun execute(
+        argv: List<String>,
+        stdin: InputStream,
+        stdout: OutputStream,
+        stderr: OutputStream,
+        environment: Shell.ShellEnvironment
+    ): Int {
         var exitCode = 1
         val (options, pattern, files) = parseArguments(argv)
         if (pattern == null && files.isEmpty()) {
@@ -26,7 +32,7 @@ class GrepCommand : Command {
             exitCode = outputStrategy.write(matches, null, stdout)
         } else {
             for (path in files) {
-                val file = File(path)
+                val file = resolve(environment, path)
                 if (!file.exists()) {
                     stderr.write("grep: $path: No such file or directory\n".toByteArray())
                     exitCode = 2

@@ -20,6 +20,8 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class Shell(
     private val executor: PipelineExecutor,
@@ -31,6 +33,10 @@ class Shell(
     private val environment: MutableMap<String, String> = HashMap(environment)
     private var lastExitCode: Int = 0
     private var lastSubstitutionExitCode: Int? = null
+
+    class ShellEnvironment (
+        var currentWorkingDirectory: Path = Paths.get(System.getProperty("user.dir"))
+    )
 
     @Suppress("SwallowedException")
     fun run(): Unit = runBlocking {
