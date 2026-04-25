@@ -2,7 +2,6 @@ package ru.bash.commands.impl
 
 import ru.bash.Shell
 import ru.bash.commands.Command
-import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 

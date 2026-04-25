@@ -4,17 +4,22 @@ import kotlinx.coroutines.runBlocking
 import ru.bash.commands.impl.ShellExitException
 import ru.bash.executor.PipelineExecutor
 import ru.bash.executor.PipelineResult
+import ru.bash.semantic.CommandSubstitutionRunner
+import ru.bash.semantic.ExpansionContext
 import ru.bash.semantic.RuntimeBuildVisitor
-import ru.bash.semantic.ShellArgumentExpandVisitor
+import ru.bash.semantic.ShellWordExpander
 import ru.bash.syntax.ast.AssignNode
 import ru.bash.syntax.ast.PipelineNode
 import ru.bash.syntax.errors.ParseException
 import ru.bash.syntax.lexer.Lexer
 import ru.bash.syntax.parser.Parser
 import java.io.BufferedReader
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
+import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -26,6 +31,8 @@ class Shell(
     private val stderr: OutputStream = System.err,
 ) {
     private val environment: MutableMap<String, String> = HashMap(environment)
+    private var lastExitCode: Int = 0
+    private var lastSubstitutionExitCode: Int? = null
 
     class ShellEnvironment (
         var currentWorkingDirectory: Path = Paths.get(System.getProperty("user.dir"))
@@ -43,7 +50,7 @@ class Shell(
                     stderr.write("exit status: ${result.lastExitCode}\n".toByteArray())
                     stderr.flush()
                 }
-            } catch (e: ShellExitException) {
+            } catch (_: ShellExitException) {
                 return@runBlocking
             } catch (e: ParseException) {
                 stderr.write("bash: ${e.message}\n".toByteArray())
@@ -57,20 +64,66 @@ class Shell(
     suspend fun executeLine(line: String): PipelineResult {
         val trimmed = line.trim()
         if (trimmed.isEmpty()) return PipelineResult(emptyList())
+        lastSubstitutionExitCode = null
         val tokens = Lexer(trimmed).tokenize()
         val ast = Parser(tokens, trimmed).parse()
+        val substitution = CommandSubstitutionRunner { inner -> captureSubstitution(inner) }
         return when (ast) {
             is AssignNode -> {
-                val value = ast.value.accept(ShellArgumentExpandVisitor(environment))
+                val expander = ShellWordExpander(
+                    ExpansionContext(environment, lastExitCode),
+                    substitution
+                )
+                val value = expander.expand(ast.value)
                 environment[ast.name] = value
-                PipelineResult(listOf(0))
+                val assignmentExitCode = lastSubstitutionExitCode ?: 0
+                val result = PipelineResult(listOf(assignmentExitCode))
+                lastExitCode = result.lastExitCode
+                result
             }
             is PipelineNode -> {
-                val model = RuntimeBuildVisitor(environment).build(ast)
-                executor.execute(model, stdin, stdout)
+                val expander = ShellWordExpander(
+                    ExpansionContext(environment, lastExitCode),
+                    substitution
+                )
+                val model = RuntimeBuildVisitor(expander).build(ast)
+                val result = executor.execute(model, stdin, stdout)
+                lastExitCode = result.lastExitCode
+                result
             }
             else -> error("Unexpected AST node: ${ast::class.simpleName}")
         }
+    }
+
+    private suspend fun captureSubstitution(innerLine: String): String {
+        val trimmed = innerLine.trim()
+        if (trimmed.isEmpty()) return ""
+        val tokens = Lexer(trimmed).tokenize()
+        val ast = Parser(tokens, trimmed).parse()
+        val substitution = CommandSubstitutionRunner { captureSubstitution(it) }
+        val expander = ShellWordExpander(
+            ExpansionContext(environment, lastExitCode),
+            substitution
+        )
+        return when (ast) {
+            is AssignNode -> throw ParseException("Unsupported assignment inside \$()", 0)
+            is PipelineNode -> {
+                val model = RuntimeBuildVisitor(expander).build(ast)
+                val out = ByteArrayOutputStream()
+                val result = executor.execute(model, ByteArrayInputStream(ByteArray(0)), out)
+                lastSubstitutionExitCode = result.lastExitCode
+                stripTrailingNewlines(String(out.toByteArray(), StandardCharsets.UTF_8))
+            }
+            else -> error("Unexpected AST in command substitution")
+        }
+    }
+
+    private fun stripTrailingNewlines(s: String): String {
+        var t = s
+        while (t.endsWith('\n')) {
+            t = t.dropLast(1)
+        }
+        return t
     }
 
     private fun printPrompt() {

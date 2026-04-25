@@ -131,6 +131,61 @@ class ShellTest {
     }
 
     @Test
+    fun `executeLine dollar question expands last exit code`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val s = shell(out)
+        s.executeLine("cat /no/such/file")
+        val result = s.executeLine("echo " + "$" + "?")
+        result.failed shouldBe false
+        out.toString().trim() shouldBe "1"
+    }
+
+    @Test
+    fun `executeLine arithmetic expansion`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("echo " + "$" + "((1+2*3))")
+        result.failed shouldBe false
+        out.toString() shouldBe "7\n"
+    }
+
+    @Test
+    fun `executeLine arithmetic expansion supports variables`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val s = shell(out, mapOf("x" to "5"))
+        val result = s.executeLine("echo " + "$" + "((x+1))")
+        result.failed shouldBe false
+        out.toString() shouldBe "6\n"
+    }
+
+    @Test
+    fun `executeLine command substitution`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("echo " + "$" + "(echo sub)")
+        result.failed shouldBe false
+        out.toString() shouldBe "sub\n"
+    }
+
+    @Test
+    fun `executeLine nested command substitution`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val result = shell(out).executeLine("echo " + "$" + "(echo " + "$" + "(echo inner))")
+        result.failed shouldBe false
+        out.toString() shouldBe "inner\n"
+    }
+
+    @Test
+    fun `assignment with substitution propagates substitution exit code to dollar question`(): Unit = runBlocking {
+        val out = ByteArrayOutputStream()
+        val s = shell(out)
+        val assignmentResult = s.executeLine("X=" + "$" + "(false)")
+        assignmentResult.lastExitCode shouldBe 1
+
+        val statusResult = s.executeLine("echo " + "$" + "?")
+        statusResult.failed shouldBe false
+        out.toString().trim() shouldBe "1"
+    }
+
+    @Test
     fun `executeLine ls lists directory contents`(@TempDir dir: Path): Unit = runBlocking {
         dir.resolve("a.txt").writeText("")
         dir.resolve("b.txt").writeText("")
