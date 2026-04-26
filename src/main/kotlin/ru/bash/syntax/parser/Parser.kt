@@ -1,11 +1,17 @@
 package ru.bash.syntax.parser
 
 import ru.bash.syntax.ast.ArgumentNode
+import ru.bash.syntax.ast.AssignNode
+import ru.bash.syntax.ast.AstNode
 import ru.bash.syntax.ast.CommandNode
 import ru.bash.syntax.ast.PipelineNode
+import ru.bash.syntax.ast.RedirectNode
 import ru.bash.syntax.ast.ShellWordNode
 import ru.bash.syntax.ast.SingleQuotedNode
 import ru.bash.syntax.ast.StringNode
+import ru.bash.syntax.ast.ArithmeticExpansionNode
+import ru.bash.syntax.ast.CommandSubstitutionNode
+import ru.bash.syntax.ast.ExitStatusNode
 import ru.bash.syntax.ast.VariableNode
 import ru.bash.syntax.ast.WordNode
 import ru.bash.syntax.errors.ParseException
@@ -22,18 +28,78 @@ class Parser(
         private val ARG_TOKEN_TYPES = setOf(
             TokenType.WORD,
             TokenType.VAR,
+            TokenType.EXIT_STATUS,
+            TokenType.COMMAND_SUBSTITUTION,
+            TokenType.ARITHMETIC_EXPANSION,
             TokenType.SINGLE_QUOTED,
             TokenType.DOUBLE_QUOTED_LITERAL,
         )
+        private val QUOTED_TYPES = setOf(
+            TokenType.SINGLE_QUOTED,
+            TokenType.DOUBLE_QUOTED_LITERAL,
+        )
+        private val ASSIGN_NAME_RE = Regex("[a-zA-Z_][a-zA-Z0-9_]*")
     }
 
-    fun parse(): PipelineNode {
+    fun parse(): AstNode {
+        val assign = tryParseAssign()
+        if (assign != null) {
+            if (!stream.end()) throw ParseException("Unexpected token after assignment", stream.peek().pos)
+            return assign
+        }
         val pipeline = parsePipeline()
         if (!stream.end()) {
             val token = stream.peek()
             throw ParseException("Unexpected token after pipeline", token.pos)
         }
         return pipeline
+    }
+
+    private fun tryParseAssign(): AssignNode? {
+        val token = stream.peek()
+        val eqIdx = token.text.indexOf('=')
+        val nameText = token.text.substringBefore('=')
+            .takeIf { token.type == TokenType.WORD && eqIdx >= 1 && it.matches(ASSIGN_NAME_RE) }
+            ?: return null
+
+        val literalSuffix = token.text.substringAfter('=')
+        stream.next()
+        val parts = mutableListOf<ArgumentNode>()
+        val types = mutableListOf<TokenType>()
+        var end = token.endExclusive
+
+        if (literalSuffix.isNotEmpty()) {
+            parts += WordNode(literalSuffix)
+            types += TokenType.WORD
+        }
+
+        while (!stream.end() && isAdjacentToAssignValue(stream.peek(), end, types)) {
+            val t = stream.next()
+            types += t.type
+            parts += argumentNodeFor(t)
+            end = t.endExclusive
+        }
+
+        val value: ArgumentNode = when {
+            parts.isEmpty() -> WordNode("")
+            parts.size == 1 -> parts.single()
+            else -> ShellWordNode(parts)
+        }
+        return AssignNode(nameText, value)
+    }
+
+    private fun isAdjacentToAssignValue(t: Token, end: Int, types: List<TokenType>): Boolean =
+        when {
+            t.type !in ARG_TOKEN_TYPES -> false
+            t.pos == end -> true
+            t.type in QUOTED_TYPES && t.pos == end + 1 -> true
+            else -> isConsecutiveDoubleQuoted(t, end, types)
+        }
+
+    private fun isConsecutiveDoubleQuoted(t: Token, end: Int, types: List<TokenType>): Boolean {
+        if (t.type != TokenType.DOUBLE_QUOTED_LITERAL || types.isEmpty()) return false
+        return types.last() == TokenType.DOUBLE_QUOTED_LITERAL &&
+            t.pos > end && (end until t.pos).all { source[it] == '"' }
     }
 
     private fun parsePipeline(): PipelineNode {
@@ -47,16 +113,24 @@ class Parser(
     }
 
     private fun parseCommand(): CommandNode {
-        val nameToken = stream.expect(
-            TokenType.WORD,
-            "Expected command name"
-        )
+        val nameNode = parseShellWord()
+            ?: throw ParseException("Expected command name", stream.peek().pos)
         val args = mutableListOf<ArgumentNode>()
-        while (true) {
-            val arg = parseShellWord() ?: break
-            args += arg
+        val redirects = mutableListOf<RedirectNode>()
+        while (!stream.end() && stream.peek().type != TokenType.PIPELINE) {
+            val type = stream.peek().type
+            if (type == TokenType.REDIRECT_OUT || type == TokenType.REDIRECT_APPEND || type == TokenType.REDIRECT_IN) {
+                val op = stream.next().text
+                val file = parseShellWord()
+                    ?: throw ParseException("Expected filename after '$op'", stream.peek().pos)
+                redirects += if (type == TokenType.REDIRECT_IN) RedirectNode.In(file)
+                else RedirectNode.Out(file, append = type == TokenType.REDIRECT_APPEND)
+            } else {
+                val arg = parseShellWord() ?: break
+                args += arg
+            }
         }
-        return CommandNode(nameToken.text, args)
+        return CommandNode(nameNode, args, redirects)
     }
 
     private fun parseShellWord(): ArgumentNode? {
@@ -99,6 +173,9 @@ class Parser(
     private fun argumentNodeFor(token: Token): ArgumentNode = when (token.type) {
         TokenType.WORD -> WordNode(token.text)
         TokenType.VAR -> VariableNode(token.text)
+        TokenType.EXIT_STATUS -> ExitStatusNode
+        TokenType.COMMAND_SUBSTITUTION -> CommandSubstitutionNode(token.text)
+        TokenType.ARITHMETIC_EXPANSION -> ArithmeticExpansionNode(token.text)
         TokenType.SINGLE_QUOTED -> SingleQuotedNode(token.text)
         TokenType.DOUBLE_QUOTED_LITERAL -> StringNode(token.text)
         else -> error("Unreachable: ${token.type} not in ARG_TOKEN_TYPES")

@@ -3,6 +3,11 @@ package ru.bash.syntax.parser
 import org.junit.jupiter.api.Test
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.assertThrows
+import ru.bash.syntax.ast.ArithmeticExpansionNode
+import ru.bash.syntax.ast.AssignNode
+import ru.bash.syntax.ast.CommandSubstitutionNode
+import ru.bash.syntax.ast.ExitStatusNode
+import ru.bash.syntax.ast.PipelineNode
 import ru.bash.syntax.ast.ShellWordNode
 import ru.bash.syntax.ast.StringNode
 import ru.bash.syntax.ast.VariableNode
@@ -12,14 +17,39 @@ import ru.bash.syntax.lexer.Lexer
 
 class ParserUnitTest {
 
-    private fun parse(line: String) = Parser(Lexer(line).tokenize(), line).parse()
+    private fun parse(line: String) = Parser(Lexer(line).tokenize(), line).parse() as PipelineNode
+    private fun parseAst(line: String) = Parser(Lexer(line).tokenize(), line).parse()
 
     @Test
     fun `parse simple command`() {
         val line = "echo hello"
-        val ast = Parser(Lexer(line).tokenize(), line).parse()
+        val ast = Parser(Lexer(line).tokenize(), line).parse() as PipelineNode
         ast.nodes.size shouldBe 1
-        ast.nodes[0].name shouldBe "echo"
+        ast.nodes[0].name shouldBe WordNode("echo")
+    }
+
+    @Test
+    fun `parse simple assignment`() {
+        val ast = parseAst("FOO=bar")
+        ast shouldBe AssignNode("FOO", WordNode("bar"))
+    }
+
+    @Test
+    fun `parse empty assignment`() {
+        val ast = parseAst("FOO=")
+        ast shouldBe AssignNode("FOO", WordNode(""))
+    }
+
+    @Test
+    fun `parse assignment with variable value`() {
+        val ast = parseAst("X=\$HOME")
+        ast shouldBe AssignNode("X", VariableNode("HOME"))
+    }
+
+    @Test
+    fun `parse assignment with glued word and variable`() {
+        val ast = parseAst("PATH=/usr/bin:\$HOME")
+        ast shouldBe AssignNode("PATH", ShellWordNode(listOf(WordNode("/usr/bin:"), VariableNode("HOME"))))
     }
 
     @Test
@@ -72,6 +102,24 @@ class ParserUnitTest {
     }
 
     @Test
+    fun `parse exit status`() {
+        val ast = parse("echo " + "$" + "?")
+        ast.nodes[0].nodes[0] shouldBe ExitStatusNode
+    }
+
+    @Test
+    fun `parse arithmetic expansion`() {
+        val ast = parse("echo " + "$" + "((2+3))")
+        ast.nodes[0].nodes[0] shouldBe ArithmeticExpansionNode("2+3")
+    }
+
+    @Test
+    fun `parse command substitution`() {
+        val ast = parse("echo " + "$" + "(pwd)")
+        ast.nodes[0].nodes[0] shouldBe CommandSubstitutionNode("pwd")
+    }
+
+    @Test
     fun `pipe without command`() {
         assertThrows<ParseException> {
             parse("echo |")
@@ -88,9 +136,9 @@ class ParserUnitTest {
     @Test
     fun `pipeline parsing cases`() {
         val cases = listOf(
-            "a" to listOf("a"),
-            "a | b" to listOf("a", "b"),
-            "a | b | c" to listOf("a", "b", "c")
+            "a" to listOf(WordNode("a")),
+            "a | b" to listOf(WordNode("a"), WordNode("b")),
+            "a | b | c" to listOf(WordNode("a"), WordNode("b"), WordNode("c"))
         )
         for ((input, expected) in cases) {
             val ast = parse(input)

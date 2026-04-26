@@ -4,6 +4,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldEndWith
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import ru.bash.Shell
 import ru.bash.commands.impl.PwdCommand
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -16,22 +17,35 @@ class PwdCommandTest {
     @Test
     fun `pwd prints current directory`() {
         val out = ByteArrayOutputStream()
-        val code = pwd.execute(listOf("pwd"), emptyStdin, out)
+        val env = Shell.ShellEnvironment()
+        val code = pwd.execute(
+            listOf("pwd"),
+            emptyStdin,
+            out,
+            ByteArrayOutputStream(),
+            env
+        )
         code shouldBe 0
-        out.toString().trim() shouldBe System.getProperty("user.dir")
+        out.toString().trim() shouldBe env.currentWorkingDirectory.toString()
     }
 
     @Test
     fun `pwd output ends with newline`() {
         val out = ByteArrayOutputStream()
-        pwd.execute(listOf("pwd"), emptyStdin, out)
+        pwd.execute(listOf("pwd"), emptyStdin, out, ByteArrayOutputStream(), Shell.ShellEnvironment())
         out.toString() shouldEndWith "\n"
     }
 
     @Test
     fun `pwd rejects arguments`() {
         assertThrows<IllegalArgumentException> {
-            pwd.execute(listOf("pwd", "extra"), emptyStdin, ByteArrayOutputStream())
+            pwd.execute(
+                listOf("pwd", "extra"),
+                emptyStdin,
+                ByteArrayOutputStream(),
+                ByteArrayOutputStream(),
+                Shell.ShellEnvironment()
+            )
         }
     }
 }
