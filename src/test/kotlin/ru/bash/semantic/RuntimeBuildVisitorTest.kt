@@ -4,6 +4,7 @@ import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import ru.bash.semantic.model.ExecCommand
 import ru.bash.semantic.model.ExecPipeline
+import ru.bash.syntax.ast.PipelineNode
 import ru.bash.syntax.ast.ShellWordNode
 import ru.bash.syntax.ast.VariableNode
 import ru.bash.syntax.ast.WordNode
@@ -12,7 +13,7 @@ import ru.bash.syntax.parser.Parser
 
 class RuntimeBuildVisitorTest {
 
-    private fun parse(line: String) = Parser(Lexer(line).tokenize(), line).parse()
+    private fun parse(line: String) = Parser(Lexer(line).tokenize(), line).parse() as PipelineNode
 
     @Test
     fun `expand variables and merge shell words`() {

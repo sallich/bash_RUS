@@ -18,7 +18,7 @@ class CatCommandTest {
     fun `cat reads from stdin when no files given`() {
         val stdin = ByteArrayInputStream("hello from stdin".toByteArray())
         val out = ByteArrayOutputStream()
-        val code = cat.execute(listOf("cat"), stdin, out)
+        val code = cat.execute(listOf("cat"), stdin, out, ByteArrayOutputStream())
         code shouldBe 0
         out.toString() shouldBe "hello from stdin"
     }
@@ -32,7 +32,8 @@ class CatCommandTest {
         val code = cat.execute(
             listOf("cat", file.toString()),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "file content"
@@ -47,7 +48,8 @@ class CatCommandTest {
         val code = cat.execute(
             listOf("cat", a.toString(), b.toString()),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString() shouldBe "AAABBB"
@@ -55,13 +57,14 @@ class CatCommandTest {
 
     @Test
     fun `cat returns 1 for missing file`() {
-        val out = ByteArrayOutputStream()
+        val err = ByteArrayOutputStream()
         val code = cat.execute(
             listOf("cat", "/nonexistent/file.txt"),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            ByteArrayOutputStream(),
+            err
         )
         code shouldBe 1
-        out.toString() shouldContain "No such file or directory"
+        err.toString() shouldContain "No such file or directory"
     }
 }

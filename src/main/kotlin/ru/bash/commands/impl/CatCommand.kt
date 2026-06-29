@@ -8,7 +8,7 @@ import java.io.OutputStream
 class CatCommand : Command {
     override val name = "cat"
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream): Int {
+    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
         val files = argv.drop(1)
 
         if (files.isEmpty()) {
@@ -21,7 +21,8 @@ class CatCommand : Command {
         for (path in files) {
             val file = File(path)
             if (!file.exists()) {
-                stdout.write("cat: $path: No such file or directory\n".toByteArray())
+                stderr.write("cat: $path: No such file or directory\n".toByteArray())
+                stderr.flush()
                 exitCode = 1
                 continue
             }

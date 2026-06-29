@@ -23,7 +23,7 @@ class Lexer(
         while (!stream.eof()) {
             when (state) {
                 LexerState.NORMAL -> tokenizeNormal()
-                LexerState.SINGLE_QUOTED -> tokenizeQuoted()
+                LexerState.SINGLE_QUOTED -> tokenizeQuoted(stream.position())
                 LexerState.DOUBLE_QUOTED -> tokenizeDoubleQuoted()
             }
         }
@@ -32,22 +32,22 @@ class Lexer(
         return tokens
     }
 
-    private fun tokenizeQuoted() {
-        val start = stream.position()
+    private fun tokenizeQuoted(start: Int) {
         val sb = StringBuilder()
-
         var c = stream.next()
         while (c != null && c != '\'') {
             sb.append(c)
             c = stream.next()
         }
-
         if (c != '\'') {
             throw ParseException("Unterminated quote starting", start)
         }
-
-        state = LexerState.NORMAL
-        addToken(TokenType.SINGLE_QUOTED, sb.toString(), start, start + sb.length + 1)
+        addToken(
+            TokenType.SINGLE_QUOTED,
+            sb.toString(),
+            start,
+            stream.position()
+        )
     }
 
     private fun tokenizeDoubleQuoted() {
@@ -65,8 +65,9 @@ class Lexer(
             c == '>' -> simpleToken(TokenType.REDIRECT_OUT, ">")
             c == '<' -> simpleToken(TokenType.REDIRECT_IN, "<")
             c == '\'' -> {
+                val start = stream.position()
                 stream.next()
-                state = LexerState.SINGLE_QUOTED
+                tokenizeQuoted(start)
             }
             c == '"' -> {
                 stream.next()
@@ -86,7 +87,6 @@ class Lexer(
     private fun tokenizeDollarNormal() {
         val start = stream.position()
         stream.next()
-
         if (!dollarReader.tryReadParameterExpansionAfterDollar(start)) {
             addToken(TokenType.WORD, "$", start, start + 1)
         }

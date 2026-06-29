@@ -13,7 +13,7 @@ class EchoCommandTest {
 
     private fun run(vararg argv: String): String {
         val out = ByteArrayOutputStream()
-        echo.execute(argv.toList(), emptyStdin, out)
+        echo.execute(argv.toList(), emptyStdin, out, ByteArrayOutputStream())
         return out.toString()
     }
 

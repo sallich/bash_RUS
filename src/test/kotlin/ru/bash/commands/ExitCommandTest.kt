@@ -17,7 +17,7 @@ class ExitCommandTest {
     @Test
     fun `exit with no args throws ShellExitException with code 0`() {
         val ex = assertThrows<ShellExitException> {
-            exit.execute(listOf("exit"), emptyStdin, out)
+            exit.execute(listOf("exit"), emptyStdin, out, ByteArrayOutputStream())
         }
         ex.code shouldBe 0
     }
@@ -25,7 +25,7 @@ class ExitCommandTest {
     @Test
     fun `exit with code throws ShellExitException with that code`() {
         val ex = assertThrows<ShellExitException> {
-            exit.execute(listOf("exit", "42"), emptyStdin, out)
+            exit.execute(listOf("exit", "42"), emptyStdin, out, ByteArrayOutputStream())
         }
         ex.code shouldBe 42
     }
@@ -33,14 +33,14 @@ class ExitCommandTest {
     @Test
     fun `exit with non-numeric arg throws IllegalArgumentException`() {
         assertThrows<IllegalArgumentException> {
-            exit.execute(listOf("exit", "abc"), emptyStdin, out)
+            exit.execute(listOf("exit", "abc"), emptyStdin, out, ByteArrayOutputStream())
         }
     }
 
     @Test
     fun `exit rejects more than one argument`() {
         assertThrows<IllegalArgumentException> {
-            exit.execute(listOf("exit", "1", "2"), emptyStdin, out)
+            exit.execute(listOf("exit", "1", "2"), emptyStdin, out, ByteArrayOutputStream())
         }
     }
 }

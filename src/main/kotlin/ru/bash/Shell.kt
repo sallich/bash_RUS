@@ -5,6 +5,9 @@ import ru.bash.commands.impl.ShellExitException
 import ru.bash.executor.PipelineExecutor
 import ru.bash.executor.PipelineResult
 import ru.bash.semantic.RuntimeBuildVisitor
+import ru.bash.semantic.ShellArgumentExpandVisitor
+import ru.bash.syntax.ast.AssignNode
+import ru.bash.syntax.ast.PipelineNode
 import ru.bash.syntax.errors.ParseException
 import ru.bash.syntax.lexer.Lexer
 import ru.bash.syntax.parser.Parser
@@ -15,11 +18,12 @@ import java.io.OutputStream
 
 class Shell(
     private val executor: PipelineExecutor,
-    private val environment: Map<String, String> = System.getenv(),
+    environment: Map<String, String> = System.getenv(),
     private val stdin: InputStream = System.`in`,
     private val stdout: OutputStream = System.out,
     private val stderr: OutputStream = System.err,
 ) {
+    private val environment: MutableMap<String, String> = HashMap(environment)
 
     @Suppress("SwallowedException")
     fun run(): Unit = runBlocking {
@@ -49,8 +53,18 @@ class Shell(
         if (trimmed.isEmpty()) return PipelineResult(emptyList())
         val tokens = Lexer(trimmed).tokenize()
         val ast = Parser(tokens, trimmed).parse()
-        val model = RuntimeBuildVisitor(environment).build(ast)
-        return executor.execute(model, stdin, stdout)
+        return when (ast) {
+            is AssignNode -> {
+                val value = ast.value.accept(ShellArgumentExpandVisitor(environment))
+                environment[ast.name] = value
+                PipelineResult(listOf(0))
+            }
+            is PipelineNode -> {
+                val model = RuntimeBuildVisitor(environment).build(ast)
+                executor.execute(model, stdin, stdout)
+            }
+            else -> error("Unexpected AST node: ${ast::class.simpleName}")
+        }
     }
 
     private fun printPrompt() {

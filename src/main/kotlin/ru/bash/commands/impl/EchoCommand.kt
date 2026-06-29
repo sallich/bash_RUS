@@ -7,7 +7,7 @@ import java.io.OutputStream
 class EchoCommand : Command {
     override val name = "echo"
 
-    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream): Int {
+    override fun execute(argv: List<String>, stdin: InputStream, stdout: OutputStream, stderr: OutputStream): Int {
         val args = argv.drop(1)
 
         var trailingNewline = true

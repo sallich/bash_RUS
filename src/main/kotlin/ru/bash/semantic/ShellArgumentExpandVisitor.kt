@@ -1,5 +1,6 @@
 package ru.bash.semantic
 
+import ru.bash.syntax.ast.AssignNode
 import ru.bash.syntax.ast.AstVisitor
 import ru.bash.syntax.ast.CommandNode
 import ru.bash.syntax.ast.PipelineNode
@@ -17,6 +18,9 @@ class ShellArgumentExpandVisitor(
         throw UnsupportedOperationException("Expected argument node")
 
     override fun visitCommand(node: CommandNode): String =
+        throw UnsupportedOperationException("Expected argument node")
+
+    override fun visitAssign(node: AssignNode): String =
         throw UnsupportedOperationException("Expected argument node")
 
     override fun visitShellWord(node: ShellWordNode): String =

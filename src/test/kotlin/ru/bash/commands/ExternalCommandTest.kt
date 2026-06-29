@@ -16,7 +16,8 @@ class ExternalCommandTest {
         val code = cmd.execute(
             listOf("echo", "hello"),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 0
         out.toString().trim() shouldBe "hello"
@@ -29,7 +30,8 @@ class ExternalCommandTest {
         val code = cmd.execute(
             listOf("false"),
             ByteArrayInputStream(ByteArray(0)),
-            out
+            out,
+            ByteArrayOutputStream()
         )
         code shouldBe 1
     }
@@ -39,7 +41,7 @@ class ExternalCommandTest {
         val cmd = ExternalCommand("cat")
         val stdin = ByteArrayInputStream("piped input".toByteArray())
         val out = ByteArrayOutputStream()
-        val code = cmd.execute(listOf("cat"), stdin, out)
+        val code = cmd.execute(listOf("cat"), stdin, out, ByteArrayOutputStream())
         code shouldBe 0
         out.toString() shouldContain "piped input"
     }
