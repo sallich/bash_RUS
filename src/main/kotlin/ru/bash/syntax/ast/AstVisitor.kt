@@ -1,5 +1,6 @@
 package ru.bash.syntax.ast
 
+@Suppress("TooManyFunctions")
 interface AstVisitor<out R> {
     fun visitPipeline(node: PipelineNode): R
     fun visitCommand(node: CommandNode): R
@@ -9,4 +10,7 @@ interface AstVisitor<out R> {
     fun visitString(node: StringNode): R
     fun visitSingleQuoted(node: SingleQuotedNode): R
     fun visitVariable(node: VariableNode): R
+    fun visitExitStatus(node: ExitStatusNode): R
+    fun visitCommandSubstitution(node: CommandSubstitutionNode): R
+    fun visitArithmeticExpansion(node: ArithmeticExpansionNode): R
 }

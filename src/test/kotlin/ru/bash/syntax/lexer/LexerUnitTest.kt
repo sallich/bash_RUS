@@ -103,4 +103,47 @@ class LexerUnitTest {
         )
         tokens[1].text shouldBe "HOME"
     }
+
+    @Test
+    fun `exit status token`() {
+        val tokens = Lexer("echo \$?").tokenize()
+        tokens.map { it.type } shouldBe listOf(
+            TokenType.WORD,
+            TokenType.EXIT_STATUS,
+            TokenType.EOF
+        )
+    }
+
+    @Test
+    fun `arithmetic expansion`() {
+        val tokens = Lexer("echo " + "$" + "((1+2))").tokenize()
+        tokens.map { it.type } shouldBe listOf(
+            TokenType.WORD,
+            TokenType.ARITHMETIC_EXPANSION,
+            TokenType.EOF
+        )
+        tokens[1].text shouldBe "1+2"
+    }
+
+    @Test
+    fun `command substitution`() {
+        val tokens = Lexer("echo \$(echo hi)").tokenize()
+        tokens.map { it.type } shouldBe listOf(
+            TokenType.WORD,
+            TokenType.COMMAND_SUBSTITUTION,
+            TokenType.EOF
+        )
+        tokens[1].text shouldBe "echo hi"
+    }
+
+    @Test
+    fun `nested command substitution`() {
+        val tokens = Lexer("echo \$(echo \$(echo hi))").tokenize()
+        tokens.map { it.type } shouldBe listOf(
+            TokenType.WORD,
+            TokenType.COMMAND_SUBSTITUTION,
+            TokenType.EOF
+        )
+        tokens[1].text shouldBe "echo \$(echo hi)"
+    }
 }

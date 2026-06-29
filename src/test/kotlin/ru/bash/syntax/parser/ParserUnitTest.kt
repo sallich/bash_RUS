@@ -3,7 +3,10 @@ package ru.bash.syntax.parser
 import org.junit.jupiter.api.Test
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.assertThrows
+import ru.bash.syntax.ast.ArithmeticExpansionNode
 import ru.bash.syntax.ast.AssignNode
+import ru.bash.syntax.ast.CommandSubstitutionNode
+import ru.bash.syntax.ast.ExitStatusNode
 import ru.bash.syntax.ast.PipelineNode
 import ru.bash.syntax.ast.ShellWordNode
 import ru.bash.syntax.ast.StringNode
@@ -96,6 +99,24 @@ class ParserUnitTest {
         val ast = parse("echo \"a\"\"b\"")
         val arg = ast.nodes[0].nodes[0]
         arg shouldBe ShellWordNode(listOf(StringNode("a"), StringNode("b")))
+    }
+
+    @Test
+    fun `parse exit status`() {
+        val ast = parse("echo " + "$" + "?")
+        ast.nodes[0].nodes[0] shouldBe ExitStatusNode
+    }
+
+    @Test
+    fun `parse arithmetic expansion`() {
+        val ast = parse("echo " + "$" + "((2+3))")
+        ast.nodes[0].nodes[0] shouldBe ArithmeticExpansionNode("2+3")
+    }
+
+    @Test
+    fun `parse command substitution`() {
+        val ast = parse("echo " + "$" + "(pwd)")
+        ast.nodes[0].nodes[0] shouldBe CommandSubstitutionNode("pwd")
     }
 
     @Test

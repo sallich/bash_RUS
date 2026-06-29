@@ -62,7 +62,16 @@ class Lexer(
         when {
             c.isWhitespace() -> stream.next()
             c == '|' -> simpleToken(TokenType.PIPELINE, "|")
-            c == '>' -> simpleToken(TokenType.REDIRECT_OUT, ">")
+            c == '>' -> {
+                val p = stream.position()
+                stream.next()
+                if (stream.peek() == '>') {
+                    stream.next()
+                    addToken(TokenType.REDIRECT_APPEND, ">>", p, p + 2)
+                } else {
+                    addToken(TokenType.REDIRECT_OUT, ">", p, p + 1)
+                }
+            }
             c == '<' -> simpleToken(TokenType.REDIRECT_IN, "<")
             c == '\'' -> {
                 val start = stream.position()
